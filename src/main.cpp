@@ -21,7 +21,7 @@ WCHAR windowTitle[MAX_LOAD_STRING];
 WCHAR windowClass[MAX_LOAD_STRING];
 ULONG_PTR gdiPlusToken;
 HINSTANCE instanceHandle;
-Game* game;
+std::unique_ptr<Game> game;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                       _In_opt_ HINSTANCE hPrevInstance,
@@ -87,12 +87,12 @@ ATOM RegisterWindowClass() {
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
     wcex.hInstance = instanceHandle;
-    wcex.hIcon = LoadIcon(instanceHandle, MAKEINTRESOURCE(IDI_SWEEP_MINER));
+    wcex.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = static_cast<HBRUSH>(GetStockObject(NULL_BRUSH));
     wcex.lpszMenuName = MAKEINTRESOURCE(IDC_SWEEP_MINER);
     wcex.lpszClassName = windowClass;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SWEEP_MINER));
+    wcex.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
 
     return RegisterClassEx(&wcex);
 }
@@ -100,7 +100,7 @@ ATOM RegisterWindowClass() {
 BOOL InitInstance(const int nCmdShow) {
     RECT rect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
 
-    AdjustWindowRectEx(&rect, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, FALSE, 0);
+    AdjustWindowRectEx(&rect, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, true, 0);
 
     HWND windowHandle = CreateWindowEx(
         0,
@@ -124,7 +124,24 @@ BOOL InitInstance(const int nCmdShow) {
     ShowWindow(windowHandle, nCmdShow);
     UpdateWindow(windowHandle);
 
-    return TRUE;
+    return true;
+}
+
+void StartNewGame(HWND windowHandle, Difficulty difficulty) {
+    if (game) {
+        game.reset();
+    }
+
+    game = std::make_unique<Game>(instanceHandle, windowHandle);
+
+    RECT rect = game->start(difficulty);
+
+    const LONG style = GetWindowLongPtr(windowHandle, GWL_STYLE);
+    const LONG exStyle = GetWindowLongPtr(windowHandle, GWL_EXSTYLE);
+
+    AdjustWindowRectEx(&rect, style, true, exStyle);
+
+    SetWindowPos(windowHandle, nullptr, 0, 0, RECT_WIDTH(rect), RECT_HEIGHT(rect), SWP_NOMOVE | SWP_NOZORDER);
 }
 
 LRESULT CALLBACK WndProc(HWND windowHandle, const UINT message, const WPARAM wordParam, const LPARAM longParam) {
@@ -132,23 +149,91 @@ LRESULT CALLBACK WndProc(HWND windowHandle, const UINT message, const WPARAM wor
 
     switch (message) {
         case WM_CREATE: {
-            game = new Game(instanceHandle, windowHandle);
-            game->start(BEGINNER);
+            StartNewGame(windowHandle, BEGINNER);
 
             break;
         }
 
         case WM_COMMAND: {
             switch (LOWORD(wordParam)) {
+                case IDM_GAME_NEW: {
+                    logger->debug("IDM_GAME_NEW");
+                    StartNewGame(windowHandle, BEGINNER);
+                    break;
+                }
+
+                case IDM_GAME_BEGINNER: {
+                    logger->debug("IDM_GAME_BEGINNER");
+                    StartNewGame(windowHandle, BEGINNER);
+                    break;
+                }
+
+                case IDM_GAME_INTERMEDIATE: {
+                    logger->debug("IDM_GAME_INTERMEDIATE");
+                    StartNewGame(windowHandle, INTERMEDIATE);
+                    break;
+                }
+
+                case IDM_GAME_EXPERT: {
+                    logger->debug("IDM_GAME_EXPERT");
+                    StartNewGame(windowHandle, EXPERT);
+                    break;
+                }
+
+                case IDM_GAME_CUSTOM: {
+                    logger->debug("IDM_GAME_CUSTOM");
+                    break;
+                }
+
+                case IDM_GAME_MARKS: {
+                    logger->debug("IDM_GAME_MARKS");
+                    break;
+                }
+
+                case IDM_GAME_COLOR: {
+                    logger->debug("IDM_GAME_COLOR");
+                    break;
+                }
+
+                case IDM_GAME_SOUND: {
+                    logger->debug("IDM_GAME_SOUND");
+                    break;
+                }
+
+                case IDM_GAME_BEST_TIMES: {
+                    logger->debug("IDM_GAME_BEST_TIMES");
+                    break;
+                }
+
+                case IDM_GAME_EXIT: {
+                    logger->debug("IDM_GAME_EXIT");
+                    break;
+                }
+
+                case IDM_HELP_GITHUB: {
+                    logger->debug("IDM_HELP_GITHUB");
+                    break;
+                }
+
+                case IDM_HELP_REPORT_ISSUE: {
+                    logger->debug("IDM_HELP_REPORT_ISSUE");
+                    break;
+                }
+
+                case IDM_HELP_ABOUT: {
+                    logger->debug("IDM_HELP_ABOUT");
+                    break;
+                }
+
                 default: {
                     return DefWindowProc(windowHandle, message, wordParam, longParam);
                 }
             }
+
+            break;
         }
 
         case WM_DESTROY: {
-            delete game;
-
             PostQuitMessage(0);
             break;
         }

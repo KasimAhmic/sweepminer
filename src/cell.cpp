@@ -52,6 +52,7 @@ Cell::Cell(HINSTANCE instanceHandle, HWND windowHandle, const int id, const int 
     this->surroundingMineCount = 0;
     this->hasMine = hasMine;
 
+    // TODO: This is dumb, don't create a window for each cell. Go full custom draw.
     this->handle = CreateWindowEx(
         0,
         WC_BUTTON,

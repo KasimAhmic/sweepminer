@@ -5,7 +5,7 @@
 #define RECT_WIDTH(rect) (rect.right - rect.left)
 #define RECT_HEIGHT(rect) (rect.bottom - rect.top)
 
-inline const logging::Logger* logger = new logging::Logger("Main", logging::Verbose);
+inline const logging::Logger* logger = new logging::Logger("Main", logging::Debug);
 
 constexpr int32_t ERROR_BUFFER_SIZE = 256;
 

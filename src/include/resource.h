@@ -9,7 +9,7 @@
 // Icons
 #define IDI_SWEEP_MINER         110
 
-// Dialogs
+// Menu
 #define IDM_GAME_NEW            120
 #define IDM_GAME_BEGINNER       121
 #define IDM_GAME_INTERMEDIATE   122

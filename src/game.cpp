@@ -44,8 +44,6 @@ RECT Game::start(const int width, const int height, const int mines) {
 
     const int totalCells = this->width * this->height;
 
-    RECT windowRect{};
-
     int id = IDC_FIRST_BOX;
     std::set<int> mineCells;
 
@@ -61,7 +59,7 @@ RECT Game::start(const int width, const int height, const int mines) {
         }
     }
 
-    return windowRect;
+    return {0, 0, this->width * BOX_SIZE, this->height * BOX_SIZE};
 }
 
 void Game::end() const {
