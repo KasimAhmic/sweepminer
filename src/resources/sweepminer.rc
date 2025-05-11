@@ -1,0 +1,25 @@
+#include "../include/resource.h"
+#include "../include/targetver.h"
+#include "windows.h"
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+
+LANGUAGE 9, 1
+1 RT_MANIFEST "SweepMiner.exe.manifest"
+
+IDR_MINE     RCDATA "images/mine.png"
+IDR_FLAG     RCDATA "images/flag.png"
+IDR_QUESTION RCDATA "images/question.png"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+   IDC_SWEEP_MINER      "SWEEPMINER"
+   IDS_APP_TITLE        "SweepMiner"
+END
+
+#endif
