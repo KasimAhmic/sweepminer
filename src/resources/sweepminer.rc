@@ -13,6 +13,40 @@ IDR_QUESTION RCDATA "images/question.png"
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Menu
+//
+
+IDC_SWEEP_MINER MENU
+BEGIN
+    POPUP "&Game"
+    BEGIN
+        MENUITEM "&New\tF2",          IDM_GAME_NEW
+        MENUITEM SEPARATOR
+        MENUITEM "&Beginner",         IDM_GAME_BEGINNER
+        MENUITEM "&Intermediate",     IDM_GAME_INTERMEDIATE
+        MENUITEM "&Expert",           IDM_GAME_EXPERT
+        MENUITEM "&Custom...",        IDM_GAME_CUSTOM
+        MENUITEM SEPARATOR
+        MENUITEM "&Marks (?)",        IDM_GAME_MARKS
+        MENUITEM "C&olor",            IDM_GAME_COLOR
+        MENUITEM "&Sound",            IDM_GAME_SOUND
+        MENUITEM SEPARATOR
+        MENUITEM "&Best Times...",    IDM_GAME_BEST_TIMES
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",             IDM_GAME_EXIT
+    END
+
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "GitHub",            IDM_HELP_GITHUB
+        MENUITEM "Report an Issue",   IDM_HELP_REPORT_ISSUE
+        MENUITEM SEPARATOR
+        MENUITEM "&About...\tF1",     IDM_HELP_ABOUT
+    END
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // String Table
 //
 
