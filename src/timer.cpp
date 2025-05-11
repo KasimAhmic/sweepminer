@@ -1,4 +1,4 @@
-#include "timer.h"
+#include "timer.hpp"
 
 Timer::Timer(const std::function<void()> &callback, const long interval) {
     this->callback = callback;

@@ -5,8 +5,8 @@
 
 #include "./include/framework.h"
 #include "./include/logger.h"
-#include "game.h"
-#include "image.h"
+#include "game.hpp"
+#include "image.hpp"
 #include "include/constants.h"
 #include "include/decoder.h"
 #include "include/handles.h"

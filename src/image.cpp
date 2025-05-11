@@ -1,5 +1,6 @@
 #include <memory>
 
+#include "image.hpp"
 #include "include/framework.h"
 #include "include/util.h"
 

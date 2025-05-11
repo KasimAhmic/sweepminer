@@ -2,8 +2,8 @@
 
 #include <chrono>
 
-#include "cell.h"
-#include "timer.h"
+#include "cell.hpp"
+#include "timer.hpp"
 #include "include/framework.h"
 
 enum Difficulty {

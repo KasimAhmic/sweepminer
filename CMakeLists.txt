@@ -12,13 +12,13 @@ add_link_options(-mwindows -municode)
 add_executable(
         ${PROJECT_NAME} WIN32
         src/image.cpp
-        src/image.h
+        src/image.hpp
         src/timer.cpp
-        src/timer.h
+        src/timer.hpp
         src/cell.cpp
-        src/cell.h
+        src/cell.hpp
         src/game.cpp
-        src/game.h
+        src/game.hpp
         src/main.cpp
 )
 

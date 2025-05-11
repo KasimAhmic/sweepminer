@@ -2,11 +2,11 @@
 #include "include/handles.h"
 #include "include/logger.h"
 #include "include/util.h"
-#include "cell.h"
+#include "cell.hpp"
 
 #include <unordered_map>
 
-#include "image.h"
+#include "image.hpp"
 #include "include/constants.h"
 #include "include/decoder.h"
 

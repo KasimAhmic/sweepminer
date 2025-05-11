@@ -1,8 +1,8 @@
-#include "game.h"
+#include "game.hpp"
 
 #include <set>
 
-#include "cell.h"
+#include "cell.hpp"
 #include "include/constants.h"
 #include "include/resource.h"
 
