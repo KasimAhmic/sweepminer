@@ -5,4 +5,4 @@
 
 std::unique_ptr<Gdiplus::Image> LoadImageFromResource(HINSTANCE instanceHandle, int resourceId);
 
-void DrawImage(HDC hdc, std::unique_ptr<Gdiplus::Image> &image, int x, int y, int width, int height);
+void DrawImage(HDC hdc, const std::shared_ptr<Gdiplus::Image>& image, int x, int y, int width, int height);

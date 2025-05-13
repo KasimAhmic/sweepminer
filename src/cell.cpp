@@ -1,5 +1,4 @@
 #include "include/framework.h"
-#include "include/handles.h"
 #include "include/logger.h"
 #include "include/util.h"
 #include "cell.hpp"
@@ -46,7 +45,16 @@ const std::unordered_map<int8_t, COLORREF> NUMBER_COLORS{
     {8, RGB(128, 128, 128)},
 };
 
-Cell::Cell(HINSTANCE instanceHandle, HWND windowHandle, const int id, const int xPosition, const int yPosition, const bool hasMine) {
+Cell::Cell(
+    const std::shared_ptr<ResourceContext> &resourceContext,
+    HINSTANCE instanceHandle,
+    HWND windowHandle,
+    const int id,
+    const int xPosition,
+    const int yPosition,
+    const bool hasMine
+) {
+    this->resourceContext = resourceContext;
     this->id = id;
     this->state = DEFAULT;
     this->surroundingMineCount = 0;
@@ -82,7 +90,8 @@ Cell::~Cell() {
     }
 }
 
-LRESULT Cell::BoxProc(HWND windowHandle, UINT message, WPARAM wordParam, LPARAM longParam, UINT_PTR idSubclass, DWORD_PTR boxPointer) {
+LRESULT Cell::BoxProc(HWND windowHandle, UINT message, WPARAM wordParam, LPARAM longParam, UINT_PTR idSubclass,
+                      DWORD_PTR boxPointer) {
     logger->verbose("Handle: ", windowHandle, " | Message: ", MESSAGE_MAP[message]);
 
     const auto box = reinterpret_cast<Cell *>(boxPointer);
@@ -106,7 +115,6 @@ LRESULT Cell::BoxProc(HWND windowHandle, UINT message, WPARAM wordParam, LPARAM 
         }
 
         case WM_PAINT: {
-            logger->debug("WM_PAINT");
             PAINTSTRUCT paintStruct{};
             HDC hdc = BeginPaint(windowHandle, &paintStruct);
 
@@ -133,25 +141,48 @@ LRESULT Cell::BoxProc(HWND windowHandle, UINT message, WPARAM wordParam, LPARAM 
 
                 case FLAGGED: {
                     box->DrawBorder(hdc, &borderRect);
-                    DrawImage(hdc, flagImage, IMAGE_PADDING, IMAGE_PADDING, RECT_WIDTH(imageRect), RECT_HEIGHT(imageRect));
+                    DrawImage(
+                        hdc,
+                        box->resourceContext->imageRegistry->GetResource(FLAG),
+                        IMAGE_PADDING,
+                        IMAGE_PADDING,
+                        RECT_WIDTH(imageRect),
+                        RECT_HEIGHT(imageRect));
                     break;
                 }
 
                 case QUESTIONED: {
                     box->DrawBorder(hdc, &borderRect);
-                    DrawImage(hdc, questionImage, IMAGE_PADDING, IMAGE_PADDING, RECT_WIDTH(imageRect), RECT_HEIGHT(imageRect));
+                    DrawImage(
+                        hdc,
+                        box->resourceContext->imageRegistry->GetResource(QUESTION),
+                        IMAGE_PADDING,
+                        IMAGE_PADDING,
+                        RECT_WIDTH(imageRect),
+                        RECT_HEIGHT(imageRect));
                     break;
                 }
 
                 case REVEALED: {
                     if (box->hasMine) {
                         FillRect(hdc, &boxRect, EXPLOSION);
-                        DrawImage(hdc, mineImage, IMAGE_PADDING, IMAGE_PADDING, RECT_WIDTH(imageRect), RECT_HEIGHT(imageRect));
+                        DrawImage(
+                            hdc,
+                            box->resourceContext->imageRegistry->GetResource(MINE),
+                            IMAGE_PADDING,
+                            IMAGE_PADDING,
+                            RECT_WIDTH(imageRect),
+                            RECT_HEIGHT(imageRect));
                     } else {
-                        SetTextColor(hdc, NUMBER_COLORS.at(4));
+                        SetTextColor(hdc, NUMBER_COLORS.at(box->surroundingMineCount));
                         SetBkMode(hdc, TRANSPARENT);
                         const auto oldFont = static_cast<HFONT>(SelectObject(hdc, numberFontHandle));
-                        DrawText(hdc, L"4", 1, &boxRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                        DrawText(
+                            hdc,
+                            std::to_wstring(box->surroundingMineCount).c_str(),
+                            1,
+                            &boxRect,
+                            DT_CENTER | DT_VCENTER | DT_SINGLELINE);
                         SelectObject(hdc, oldFont);
                     }
                     break;
@@ -206,11 +237,13 @@ HWND Cell::getHandle() const {
 }
 
 void Cell::DrawBorder(HDC hdc, LPRECT rect) {
-    LOGBRUSH highlightBrush = { BS_SOLID, RGB(255, 255, 255), 0 };
-    HPEN highlightPen = ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_FLAT | PS_JOIN_MITER, BORDER_WIDTH, &highlightBrush, 0, nullptr);
+    LOGBRUSH highlightBrush = {BS_SOLID, RGB(255, 255, 255), 0};
+    HPEN highlightPen = ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_FLAT | PS_JOIN_MITER, BORDER_WIDTH,
+                                     &highlightBrush, 0, nullptr);
 
-    LOGBRUSH shadowBrush = { BS_SOLID, RGB(128, 128, 128), 0 };
-    HPEN shadowPen = ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_FLAT | PS_JOIN_MITER, BORDER_WIDTH, &shadowBrush, 0, nullptr);
+    LOGBRUSH shadowBrush = {BS_SOLID, RGB(128, 128, 128), 0};
+    HPEN shadowPen = ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_FLAT | PS_JOIN_MITER, BORDER_WIDTH, &shadowBrush,
+                                  0, nullptr);
 
     HGDIOBJ oldPen = SelectObject(hdc, highlightPen);
 

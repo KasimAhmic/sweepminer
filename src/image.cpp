@@ -51,7 +51,7 @@ std::unique_ptr<Gdiplus::Image> LoadImageFromResource(HINSTANCE instanceHandle, 
     return image;
 }
 
-void DrawImage(HDC hdc, std::unique_ptr<Gdiplus::Image> &image, int x, int y, int width, int height) {
+void DrawImage(HDC hdc, const std::shared_ptr<Gdiplus::Image>& image, int x, int y, int width, int height) {
     if (image && image->GetLastStatus() == Gdiplus::Ok) {
         Gdiplus::Graphics graphics(hdc);
         graphics.DrawImage(image.get(), x, y, width, height);

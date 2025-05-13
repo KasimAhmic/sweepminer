@@ -15,8 +15,7 @@ enum Difficulty {
 class Game {
 public:
     Game(HINSTANCE instanceHandle, HWND windowHandle);
-
-    ~Game();
+    ~Game() = default;
 
     RECT start(int width, int height, int mines);
     RECT start(Difficulty difficulty);
@@ -31,6 +30,9 @@ private:
     int mines;
     int clock;
     int flags;
-    std::vector<Cell*> cells;
-    Timer* timer;
+    std::vector<std::vector<std::unique_ptr<Cell>>> cells;
+    std::unique_ptr<Timer> timer;
+    std::shared_ptr<ResourceContext> resourceContext;
+
+    ResourceContext LoadResources() const;
 };

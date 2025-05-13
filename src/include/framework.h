@@ -12,3 +12,4 @@
 #include <CommCtrl.h>
 #include <objidl.h>
 #include <gdiplus.h>
+#include <shellapi.h>

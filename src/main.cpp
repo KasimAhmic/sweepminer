@@ -9,7 +9,6 @@
 #include "image.hpp"
 #include "include/constants.h"
 #include "include/decoder.h"
-#include "include/handles.h"
 #include "include/resource.h"
 #include "include/util.h"
 
@@ -19,6 +18,9 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 WCHAR windowTitle[MAX_LOAD_STRING];
 WCHAR windowClass[MAX_LOAD_STRING];
+WCHAR githubUrl[MAX_LOAD_STRING];
+WCHAR githubIssuesUrl[MAX_LOAD_STRING];
+
 ULONG_PTR gdiPlusToken;
 HINSTANCE instanceHandle;
 std::unique_ptr<Game> game;
@@ -47,9 +49,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     LoadString(instanceHandle, IDS_APP_TITLE, windowTitle, MAX_LOAD_STRING);
     LoadString(instanceHandle, IDC_SWEEP_MINER, windowClass, MAX_LOAD_STRING);
-    mineImage = LoadImageFromResource(instanceHandle, IDR_MINE);
-    flagImage = LoadImageFromResource(instanceHandle, IDR_FLAG);
-    questionImage = LoadImageFromResource(instanceHandle, IDR_QUESTION);
+    LoadString(instanceHandle, IDS_GITHUB_URL, githubUrl, MAX_LOAD_STRING);
+    LoadString(instanceHandle, IDS_GITHUB_ISSUES_URL, githubIssuesUrl, MAX_LOAD_STRING);
 
     logger->debug("Window Title: ", windowTitle);
     logger->debug("Window Class: ", windowClass);
@@ -72,6 +73,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 
+    game.reset();
     Gdiplus::GdiplusShutdown(gdiPlusToken);
 
     return static_cast<int>(msg.wParam);
@@ -150,7 +152,6 @@ LRESULT CALLBACK WndProc(HWND windowHandle, const UINT message, const WPARAM wor
     switch (message) {
         case WM_CREATE: {
             StartNewGame(windowHandle, BEGINNER);
-
             break;
         }
 
@@ -207,16 +208,19 @@ LRESULT CALLBACK WndProc(HWND windowHandle, const UINT message, const WPARAM wor
 
                 case IDM_GAME_EXIT: {
                     logger->debug("IDM_GAME_EXIT");
+                    SendMessage(windowHandle, WM_CLOSE, 0, 0);
                     break;
                 }
 
                 case IDM_HELP_GITHUB: {
                     logger->debug("IDM_HELP_GITHUB");
+                    ShellExecute(nullptr, L"open", githubUrl, nullptr, nullptr, SW_SHOWNORMAL);
                     break;
                 }
 
                 case IDM_HELP_REPORT_ISSUE: {
                     logger->debug("IDM_HELP_REPORT_ISSUE");
+                    ShellExecute(nullptr, L"open", githubIssuesUrl, nullptr, nullptr, SW_SHOWNORMAL);
                     break;
                 }
 
@@ -230,6 +234,11 @@ LRESULT CALLBACK WndProc(HWND windowHandle, const UINT message, const WPARAM wor
                 }
             }
 
+            break;
+        }
+
+        case WM_CLOSE: {
+            DestroyWindow(windowHandle);
             break;
         }
 

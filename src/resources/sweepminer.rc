@@ -52,8 +52,10 @@ END
 
 STRINGTABLE
 BEGIN
-   IDC_SWEEP_MINER      "SWEEPMINER"
-   IDS_APP_TITLE        "SweepMiner"
+   IDC_SWEEP_MINER          "SWEEPMINER"
+   IDS_APP_TITLE            "SweepMiner"
+   IDS_GITHUB_URL           "https://github.com/KasimAhmic/sweepminer"
+   IDS_GITHUB_ISSUES_URL    "https://github.com/KasimAhmic/sweepminer/issues"
 END
 
 #endif

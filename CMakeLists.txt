@@ -17,6 +17,8 @@ add_executable(
         src/timer.hpp
         src/cell.cpp
         src/cell.hpp
+        src/resource_registry.hpp
+        src/resource_context.hpp
         src/game.cpp
         src/game.hpp
         src/main.cpp

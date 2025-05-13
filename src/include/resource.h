@@ -26,6 +26,8 @@
 
 // Strings
 #define IDS_APP_TITLE           140
+#define IDS_GITHUB_URL          141
+#define IDS_GITHUB_ISSUES_URL   142
 
 // Controls
 #define IDC_STATIC               -1

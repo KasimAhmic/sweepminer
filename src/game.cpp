@@ -3,6 +3,7 @@
 #include <set>
 
 #include "cell.hpp"
+#include "image.hpp"
 #include "include/constants.h"
 #include "include/resource.h"
 
@@ -14,18 +15,20 @@ Game::Game(HINSTANCE instanceHandle, HWND windowHandle) {
     this->mines = 0;
     this->clock = 0;
     this->flags = 0;
-    this->timer = new Timer([this] { this->tick(); }, 1000);
+    this->timer = std::make_unique<Timer>([this] { this->tick(); }, 1000);
+    this->resourceContext = std::make_shared<ResourceContext>(LoadResources());
 }
 
-Game::~Game() {
-    this->timer->stop();
-    delete this->timer;
-    this->timer = nullptr;
-    for (const auto cell : this->cells) {
-        delete cell;
-    }
-    this->cells.clear();
+ResourceContext Game::LoadResources() const {
+    ResourceContext resourceContext{std::make_shared<ResourceRegistry<Gdiplus::Image, Image>>()};
+
+    resourceContext.imageRegistry->AddResource(MINE, LoadImageFromResource(instanceHandle, IDR_MINE));
+    resourceContext.imageRegistry->AddResource(FLAG, LoadImageFromResource(instanceHandle, IDR_FLAG));
+    resourceContext.imageRegistry->AddResource(QUESTION, LoadImageFromResource(instanceHandle, IDR_QUESTION));
+
+    return resourceContext;
 }
+
 
 RECT Game::start(const Difficulty difficulty) {
     switch (difficulty) {
@@ -52,10 +55,27 @@ RECT Game::start(const int width, const int height, const int mines) {
     }
 
     for (int y = 0; y < this->height; y++) {
+        std::vector<std::unique_ptr<Cell>> row;
+
         for (int x = 0; x < this->width; x++) {
-            auto cell = new Cell(this->instanceHandle, this->windowHandle, id, x * BOX_SIZE, y * BOX_SIZE, mineCells.contains(id - IDC_FIRST_BOX));
-            this->cells.push_back(cell);
+            row.push_back(std::make_unique<Cell>(
+                this->resourceContext,
+                this->instanceHandle,
+                this->windowHandle,
+                id,
+                x * BOX_SIZE,
+                y * BOX_SIZE,
+                mineCells.contains(id - IDC_FIRST_BOX)));
+
             id++;
+        }
+
+        this->cells.push_back(std::move(row));
+    }
+
+    for (int y = 0; y < this->height; y++) {
+        for (int x = 0; x < this->width; x++) {
+            this->cells[y][x]->setSurroundingMineCount(rand() % 8 + 1);
         }
     }
 
