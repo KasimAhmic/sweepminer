@@ -7,8 +7,10 @@
 #include <chrono>
 #include <iostream>
 
+#include "include/framework.h"
+
 namespace logging {
-    enum LogLevel {
+    enum class LogLevel {
         Verbose = 0,
         Debug,
         Info,
@@ -24,17 +26,17 @@ namespace logging {
         const char *color;
     };
 
-    constexpr LogMeta VerboseMeta = {Verbose, "VERBOSE", "\033[96m"};
-    constexpr LogMeta DebugMeta = {Debug, "  DEBUG", "\033[95m"};
-    constexpr LogMeta InfoMeta = {Info, "   INFO", "\033[32m"};
-    constexpr LogMeta WarnMeta = {Warn, "   WARN", "\033[33m"};
-    constexpr LogMeta ErrorMeta = {Error, "  ERROR", "\033[31m"};
-    constexpr LogMeta FatalMeta = {Fatal, "  FATAL", "\033[1m"};
-    constexpr LogMeta SilentMeta = {Silent, " SILENT", "\033[0m"};
+    constexpr LogMeta VerboseMeta = {LogLevel::Verbose, "VERBOSE", "\033[96m"};
+    constexpr LogMeta DebugMeta = {LogLevel::Debug, "  DEBUG", "\033[95m"};
+    constexpr LogMeta InfoMeta = {LogLevel::Info, "   INFO", "\033[32m"};
+    constexpr LogMeta WarnMeta = {LogLevel::Warn, "   WARN", "\033[33m"};
+    constexpr LogMeta ErrorMeta = {LogLevel::Error, "  ERROR", "\033[31m"};
+    constexpr LogMeta FatalMeta = {LogLevel::Fatal, "  FATAL", "\033[1m"};
+    constexpr LogMeta SilentMeta = {LogLevel::Silent, " SILENT", "\033[0m"};
 
     class Logger {
     public:
-        explicit Logger(const std::string &name, const LogLevel logLevel = Info) {
+        explicit Logger(const std::string &name, const LogLevel logLevel = LogLevel::Debug) {
             const std::string pid = std::to_string(GetCurrentProcessId());
 
             this->name = colorize("[" + name + "]", WarnMeta);
@@ -118,7 +120,7 @@ namespace logging {
                 return "";
             }
 
-            const int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, value, -1, nullptr, 0, nullptr, nullptr);
+            const int32_t sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, value, -1, nullptr, 0, nullptr, nullptr);
 
             if (sizeNeeded <= 0) {
                 return "";

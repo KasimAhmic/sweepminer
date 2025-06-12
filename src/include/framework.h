@@ -13,3 +13,4 @@
 #include <objidl.h>
 #include <gdiplus.h>
 #include <shellapi.h>
+#include <mmsystem.h>

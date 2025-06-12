@@ -32,6 +32,7 @@ target_link_libraries(
         comctl32
         uxtheme
         gdiplus
+        winmm
 )
 
 if (MSVC)

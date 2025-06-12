@@ -1,10 +1,14 @@
 #include <memory>
 
 #include "image.hpp"
-#include "include/framework.h"
-#include "include/util.h"
 
-std::unique_ptr<Gdiplus::Image> LoadImageFromResource(HINSTANCE instanceHandle, int resourceId) {
+#include "include/framework.h"
+#include "logger.hpp"
+#include "util.hpp"
+
+static auto logger = new logging::Logger("Image");
+
+std::unique_ptr<Gdiplus::Image> LoadImageFromResource(HINSTANCE instanceHandle, int32_t resourceId) {
     HRSRC resourceHandle = FindResource(instanceHandle, MAKEINTRESOURCE(resourceId), RT_RCDATA);
 
     if (!resourceHandle) {
@@ -51,7 +55,7 @@ std::unique_ptr<Gdiplus::Image> LoadImageFromResource(HINSTANCE instanceHandle, 
     return image;
 }
 
-void DrawImage(HDC hdc, const std::shared_ptr<Gdiplus::Image>& image, int x, int y, int width, int height) {
+void DrawImage(HDC hdc, const std::shared_ptr<Gdiplus::Image>& image, int32_t x, int32_t y, int32_t width, int32_t height) {
     if (image && image->GetLastStatus() == Gdiplus::Ok) {
         Gdiplus::Graphics graphics(hdc);
         graphics.DrawImage(image.get(), x, y, width, height);

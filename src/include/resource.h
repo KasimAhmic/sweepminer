@@ -5,6 +5,9 @@
 #define IDR_MINE                101
 #define IDR_FLAG                102
 #define IDR_QUESTION            103
+#define IDR_CLICKED             104
+#define IDR_FLAGGED             105
+#define IDR_EXPLOSION           106
 
 // Icons
 #define IDI_SWEEP_MINER         110
@@ -23,6 +26,11 @@
 #define IDM_HELP_GITHUB         130
 #define IDM_HELP_REPORT_ISSUE   131
 #define IDM_HELP_ABOUT          132
+
+// Debug Menu
+#define IDM_DEBUG_SHOW_MINES    133
+#define IDM_DEBUG_SHOW_COUNTS   134
+#define IDM_DEBUG_REVEAL_ALL    135
 
 // Strings
 #define IDS_APP_TITLE           140

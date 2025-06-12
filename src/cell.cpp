@@ -1,25 +1,19 @@
 #include "include/framework.h"
-#include "include/logger.h"
-#include "include/util.h"
+#include "util.hpp"
 #include "cell.hpp"
 
 #include <unordered_map>
 
-#include "image.hpp"
-#include "include/constants.h"
 #include "include/decoder.h"
+#include "include/handles.h"
+#include "include/resource.h"
+#include "image.hpp"
+#include "logger.hpp"
 
-constexpr int BOX_PADDING = 0;
-constexpr int IMAGE_PADDING = 12;
-constexpr int BORDER_WIDTH = 4;
-
-const HBRUSH BACKGROUND = CreateSolidBrush(RGB(192, 192, 192));
-const HBRUSH BORDER_HIGHLIGHT = CreateSolidBrush(RGB(255, 255, 255));
-const HBRUSH BORDER_SHADOW = CreateSolidBrush(RGB(128, 128, 128));
-const HBRUSH EXPLOSION = CreateSolidBrush(RGB(255, 0, 0));
+static auto *logger = new logging::Logger("Cell");
 
 const HFONT numberFontHandle = CreateFont(
-    -BOX_SIZE / 2,
+    -CELL_SIZE / 2,
     0,
     0,
     0,
@@ -49,16 +43,20 @@ Cell::Cell(
     const std::shared_ptr<ResourceContext> &resourceContext,
     HINSTANCE instanceHandle,
     HWND windowHandle,
-    const int id,
-    const int xPosition,
-    const int yPosition,
+    const int32_t id,
+    const int32_t xPosition,
+    const int32_t yPosition,
+    const int32_t column,
+    const int32_t row,
     const bool hasMine
 ) {
     this->resourceContext = resourceContext;
     this->id = id;
-    this->state = DEFAULT;
+    this->state = State::HIDDEN;
     this->surroundingMineCount = 0;
-    this->hasMine = hasMine;
+    this->containsMine = hasMine;
+    this->column = column;
+    this->row = row;
 
     // TODO: This is dumb, don't create a window for each cell. Go full custom draw.
     this->handle = CreateWindowEx(
@@ -68,8 +66,8 @@ Cell::Cell(
         WS_VISIBLE | WS_CHILD | BS_OWNERDRAW,
         xPosition,
         yPosition,
-        BOX_SIZE,
-        BOX_SIZE,
+        CELL_SIZE,
+        CELL_SIZE,
         windowHandle,
         reinterpret_cast<HMENU>(this->id),
         instanceHandle,
@@ -90,27 +88,39 @@ Cell::~Cell() {
     }
 }
 
-LRESULT Cell::BoxProc(HWND windowHandle, UINT message, WPARAM wordParam, LPARAM longParam, UINT_PTR idSubclass,
-                      DWORD_PTR boxPointer) {
+LRESULT Cell::BoxProc(
+    HWND windowHandle,
+    UINT message,
+    WPARAM wordParam,
+    LPARAM longParam,
+    UINT_PTR idSubclass,
+    DWORD_PTR boxPointer) {
     logger->verbose("Handle: ", windowHandle, " | Message: ", MESSAGE_MAP[message]);
 
     const auto box = reinterpret_cast<Cell *>(boxPointer);
 
     if (!box) {
-        logger->warn("Box pointer is null");
+        logger->warn("Cell pointer is null");
         return DefSubclassProc(windowHandle, message, wordParam, longParam);
     }
 
     switch (message) {
         case WM_LBUTTONDOWN: {
-            box->reveal();
-            InvalidateRect(windowHandle, nullptr, true);
+            if (!box->isRevealed()) {
+                box->reveal();
+
+                if (box->hasMine()) {
+                    PlaySound(MAKEINTRESOURCE(IDR_EXPLOSION), GetModuleHandle(nullptr), SND_RESOURCE | SND_ASYNC);
+                } else {
+                    PlaySound(MAKEINTRESOURCE(IDR_CLICKED), GetModuleHandle(nullptr), SND_RESOURCE | SND_ASYNC);
+                }
+            }
             break;
         }
 
         case WM_RBUTTONDOWN: {
             box->mark();
-            InvalidateRect(windowHandle, nullptr, true);
+            PlaySound(MAKEINTRESOURCE(IDR_FLAGGED), GetModuleHandle(nullptr), SND_RESOURCE | SND_ASYNC);
             break;
         }
 
@@ -127,23 +137,23 @@ LRESULT Cell::BoxProc(HWND windowHandle, UINT message, WPARAM wordParam, LPARAM 
             RECT borderRect{boxRect};
             InflateRect(&borderRect, -BORDER_WIDTH / 2, -BORDER_WIDTH / 2);
 
-            boxRect.left += BOX_PADDING;
-            boxRect.top += BOX_PADDING;
-            boxRect.right -= BOX_PADDING;
-            boxRect.bottom -= BOX_PADDING;
-            FillRect(hdc, &boxRect, BACKGROUND);
+            boxRect.left += CELL_PADDING;
+            boxRect.top += CELL_PADDING;
+            boxRect.right -= CELL_PADDING;
+            boxRect.bottom -= CELL_PADDING;
+            FillRect(hdc, &boxRect, box->resourceContext->GetResource(Brush::HIDDEN_BACKGROUND));
 
             switch (box->state) {
-                case DEFAULT: {
+                case State::HIDDEN: {
                     box->DrawBorder(hdc, &borderRect);
                     break;
                 }
 
-                case FLAGGED: {
+                case State::FLAGGED: {
                     box->DrawBorder(hdc, &borderRect);
                     DrawImage(
                         hdc,
-                        box->resourceContext->imageRegistry->GetResource(FLAG),
+                        box->resourceContext->GetResource(Image::FLAG),
                         IMAGE_PADDING,
                         IMAGE_PADDING,
                         RECT_WIDTH(imageRect),
@@ -151,11 +161,11 @@ LRESULT Cell::BoxProc(HWND windowHandle, UINT message, WPARAM wordParam, LPARAM 
                     break;
                 }
 
-                case QUESTIONED: {
+                case State::QUESTIONED: {
                     box->DrawBorder(hdc, &borderRect);
                     DrawImage(
                         hdc,
-                        box->resourceContext->imageRegistry->GetResource(QUESTION),
+                        box->resourceContext->GetResource(Image::QUESTION),
                         IMAGE_PADDING,
                         IMAGE_PADDING,
                         RECT_WIDTH(imageRect),
@@ -163,17 +173,21 @@ LRESULT Cell::BoxProc(HWND windowHandle, UINT message, WPARAM wordParam, LPARAM 
                     break;
                 }
 
-                case REVEALED: {
-                    if (box->hasMine) {
-                        FillRect(hdc, &boxRect, EXPLOSION);
+                case State::REVEALED: {
+                    if (box->containsMine) {
+                        FillRect(hdc, &boxRect, box->resourceContext->GetResource(Brush::EXPLODED_BACKGROUND));
                         DrawImage(
                             hdc,
-                            box->resourceContext->imageRegistry->GetResource(MINE),
+                            box->resourceContext->GetResource(Image::MINE),
                             IMAGE_PADDING,
                             IMAGE_PADDING,
                             RECT_WIDTH(imageRect),
                             RECT_HEIGHT(imageRect));
                     } else {
+                        if (box->surroundingMineCount == 0) {
+                            break;
+                        }
+
                         SetTextColor(hdc, NUMBER_COLORS.at(box->surroundingMineCount));
                         SetBkMode(hdc, TRANSPARENT);
                         const auto oldFont = static_cast<HFONT>(SelectObject(hdc, numberFontHandle));
@@ -203,47 +217,49 @@ LRESULT Cell::BoxProc(HWND windowHandle, UINT message, WPARAM wordParam, LPARAM 
 }
 
 void Cell::mark() {
-    if (this->state == REVEALED) {
+    if (this->state == State::REVEALED) {
         return;
     }
 
-    logger->debug("Box::mark");
+    logger->debug("Cell::mark");
 
     this->state = [&] {
         switch (this->state) {
-            case DEFAULT: return FLAGGED;
-            case FLAGGED: return QUESTIONED;
-            case QUESTIONED: return DEFAULT;
+            case State::HIDDEN: return State::FLAGGED;
+            case State::FLAGGED: return State::QUESTIONED;
+            case State::QUESTIONED: return State::HIDDEN;
             default: return this->state;
         }
     }();
 
-    SetWindowText(this->handle, this->state == FLAGGED ? L"F" : this->state == QUESTIONED ? L"?" : L"");
+    InvalidateRect(this->getHandle(), nullptr, true);
 }
 
 void Cell::reveal() {
-    logger->debug("Box::reveal");
-    this->state = REVEALED;
-    SetWindowText(this->handle, L"R");
-    SetWindowPos(this->handle, nullptr, 0, 0, 50, 50, SWP_NOMOVE | SWP_NOZORDER);
+    if (this->hasMine()) {
+        this->revealCell();
+        return;
+    }
+
+    game->revealConnectedEmptyCells(this->column, this->row);
 }
 
-void Cell::setSurroundingMineCount(const int count) {
+void Cell::revealCell() {
+    logger->debug("Cell::reveal");
+    this->state = State::REVEALED;
+    InvalidateRect(this->getHandle(), nullptr, true);
+}
+
+void Cell::setSurroundingMineCount(const int32_t count) {
     this->surroundingMineCount = count;
-}
-
-HWND Cell::getHandle() const {
-    return this->handle;
 }
 
 void Cell::DrawBorder(HDC hdc, LPRECT rect) {
     LOGBRUSH highlightBrush = {BS_SOLID, RGB(255, 255, 255), 0};
-    HPEN highlightPen = ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_FLAT | PS_JOIN_MITER, BORDER_WIDTH,
-                                     &highlightBrush, 0, nullptr);
+    HPEN highlightPen = ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_FLAT | PS_JOIN_MITER, BORDER_WIDTH, &highlightBrush, 0, nullptr);
 
     LOGBRUSH shadowBrush = {BS_SOLID, RGB(128, 128, 128), 0};
-    HPEN shadowPen = ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_FLAT | PS_JOIN_MITER, BORDER_WIDTH, &shadowBrush,
-                                  0, nullptr);
+    HPEN shadowPen = ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_FLAT | PS_JOIN_MITER, BORDER_WIDTH, &shadowBrush, 0, nullptr);
 
     HGDIOBJ oldPen = SelectObject(hdc, highlightPen);
 

@@ -1,11 +1,12 @@
 #pragma once
 
-#include "logger.h"
+#include <string>
+#include <memory>
+
+#include "include/framework.h"
 
 #define RECT_WIDTH(rect) (rect.right - rect.left)
 #define RECT_HEIGHT(rect) (rect.bottom - rect.top)
-
-inline const logging::Logger* logger = new logging::Logger("Main", logging::Debug);
 
 constexpr int32_t ERROR_BUFFER_SIZE = 256;
 
@@ -29,4 +30,15 @@ inline HWND GetClickedControl(HWND parentHandle, const LPARAM longParam) {
     ScreenToClient(parentHandle, &clickLocation);
 
     return ChildWindowFromPoint(parentHandle, clickLocation);
+}
+
+inline std::shared_ptr<HBRUSH> CreateBrush(COLORREF color) {
+    return std::shared_ptr<HBRUSH>(
+        new HBRUSH(CreateSolidBrush(color)),
+        [](HBRUSH* brush) {
+            if (brush) {
+                DeleteObject(brush);
+            }
+        }
+    );
 }

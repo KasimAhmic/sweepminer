@@ -1,19 +1,22 @@
 #include <iostream>
 #include <map>
-#include <set>
 #include <string>
 
 #include "./include/framework.h"
-#include "./include/logger.h"
-#include "game.hpp"
-#include "image.hpp"
-#include "include/constants.h"
 #include "include/decoder.h"
 #include "include/resource.h"
-#include "include/util.h"
+#include "include/handles.h"
+#include "logger.hpp"
+#include "game.hpp"
+#include "image.hpp"
+#include "util.hpp"
+
+constexpr int32_t MAX_LOAD_STRING = 128;
+
+static auto *logger = new logging::Logger("Main");
 
 ATOM RegisterWindowClass();
-BOOL InitInstance(int);
+BOOL InitInstance(int32_t);
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 WCHAR windowTitle[MAX_LOAD_STRING];
@@ -23,12 +26,11 @@ WCHAR githubIssuesUrl[MAX_LOAD_STRING];
 
 ULONG_PTR gdiPlusToken;
 HINSTANCE instanceHandle;
-std::unique_ptr<Game> game;
 
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+int32_t APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                       _In_opt_ HINSTANCE hPrevInstance,
                       _In_ LPWSTR lpCmdLine,
-                      _In_ const int nShowCmd) {
+                      _In_ const int32_t nShowCmd) {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -76,7 +78,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     game.reset();
     Gdiplus::GdiplusShutdown(gdiPlusToken);
 
-    return static_cast<int>(msg.wParam);
+    return static_cast<int32_t>(msg.wParam);
 }
 
 ATOM RegisterWindowClass() {
@@ -99,11 +101,7 @@ ATOM RegisterWindowClass() {
     return RegisterClassEx(&wcex);
 }
 
-BOOL InitInstance(const int nCmdShow) {
-    RECT rect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
-
-    AdjustWindowRectEx(&rect, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, true, 0);
-
+BOOL InitInstance(const int32_t nCmdShow) {
     HWND windowHandle = CreateWindowEx(
         0,
         windowClass,
@@ -111,8 +109,8 @@ BOOL InitInstance(const int nCmdShow) {
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
-        RECT_WIDTH(rect),
-        RECT_HEIGHT(rect),
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
         nullptr,
         nullptr,
         instanceHandle,
@@ -226,6 +224,24 @@ LRESULT CALLBACK WndProc(HWND windowHandle, const UINT message, const WPARAM wor
 
                 case IDM_HELP_ABOUT: {
                     logger->debug("IDM_HELP_ABOUT");
+                    break;
+                }
+
+                case IDM_DEBUG_SHOW_MINES: {
+                    logger->debug("IDM_DEBUG_SHOW_MINES");
+                    game->showMines();
+                    break;
+                }
+
+                case IDM_DEBUG_SHOW_COUNTS: {
+                    logger->debug("IDM_DEBUG_SHOW_COUNTS");
+                    game->showCounts();
+                    break;
+                }
+
+                case IDM_DEBUG_REVEAL_ALL: {
+                    logger->debug("IDM_DEBUG_REVEAL_ALL");
+                    game->revealAll();
                     break;
                 }
 

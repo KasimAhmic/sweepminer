@@ -7,9 +7,17 @@
 LANGUAGE 9, 1
 1 RT_MANIFEST "SweepMiner.exe.manifest"
 
-IDR_MINE     RCDATA "images/mine.png"
-IDR_FLAG     RCDATA "images/flag.png"
-IDR_QUESTION RCDATA "images/question.png"
+/////////////////////////////////////////////////////////////////////////////
+//
+// Resources
+//
+
+IDR_MINE        RCDATA  "images/mine.png"
+IDR_FLAG        RCDATA  "images/flag.png"
+IDR_QUESTION    RCDATA  "images/question.png"
+IDR_CLICKED     WAVE    "sounds/click.wav"
+IDR_FLAGGED     WAVE    "sounds/flag.wav"
+IDR_EXPLOSION   WAVE    "sounds/explosion.wav"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -42,6 +50,13 @@ BEGIN
         MENUITEM "Report an Issue",   IDM_HELP_REPORT_ISSUE
         MENUITEM SEPARATOR
         MENUITEM "&About...\tF1",     IDM_HELP_ABOUT
+    END
+
+    POPUP "&Debug"
+    BEGIN
+        MENUITEM "Show Mines",        IDM_DEBUG_SHOW_MINES
+        MENUITEM "Show Counts",       IDM_DEBUG_SHOW_COUNTS
+        MENUITEM "Reveal All",        IDM_DEBUG_REVEAL_ALL
     END
 END
 
