@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 
-#include "SweepMiner/framework.h"
+#include "SweepMiner/framework.hpp"
 
 #define RECT_WIDTH(rect) (rect.right - rect.left)
 #define RECT_HEIGHT(rect) (rect.bottom - rect.top)

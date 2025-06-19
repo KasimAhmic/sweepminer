@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <random>
 
-#include "SweepMiner/resource.h"
+#include "SweepMiner/resource.hpp"
 
 #include "cell.hpp"
 #include "image.hpp"

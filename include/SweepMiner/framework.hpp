@@ -1,6 +1,6 @@
 #pragma once
 
-#include "targetver.h"
+#include "targetver.hpp"
 
 #define UNICODE
 

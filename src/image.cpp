@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "SweepMiner/framework.h"
+#include "SweepMiner/framework.hpp"
 
 #include "image.hpp"
 #include "logging.hpp"

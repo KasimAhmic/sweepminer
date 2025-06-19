@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SweepMiner/framework.h"
+#include "SweepMiner/framework.hpp"
 
 #include "resource_context.hpp"
 

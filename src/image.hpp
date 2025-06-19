@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "SweepMiner/framework.h"
+#include "SweepMiner/framework.hpp"
 
 std::unique_ptr<Gdiplus::Image> LoadImageFromResource(HINSTANCE instanceHandle, int32_t resourceId);
 

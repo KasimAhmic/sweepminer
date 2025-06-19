@@ -1,9 +1,9 @@
 #include <iostream>
 #include <string>
 
-#include "SweepMiner/framework.h"
-#include "SweepMiner/decoder.h"
-#include "SweepMiner/resource.h"
+#include "SweepMiner/framework.hpp"
+#include "SweepMiner/decoder.hpp"
+#include "SweepMiner/resource.hpp"
 
 #include "logging.hpp"
 #include "game.hpp"
