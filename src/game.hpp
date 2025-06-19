@@ -4,7 +4,6 @@
 
 #include "cell.hpp"
 #include "timer.hpp"
-#include "include/framework.h"
 
 enum Difficulty {
     BEGINNER,

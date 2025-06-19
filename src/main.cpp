@@ -1,12 +1,11 @@
 #include <iostream>
-#include <map>
 #include <string>
 
-#include "./include/framework.h"
-#include "include/decoder.h"
-#include "include/resource.h"
-#include "include/handles.h"
-#include "logger.hpp"
+#include "SweepMiner/framework.h"
+#include "SweepMiner/decoder.h"
+#include "SweepMiner/resource.h"
+
+#include "logging.hpp"
 #include "game.hpp"
 #include "image.hpp"
 #include "util.hpp"
@@ -14,6 +13,8 @@
 constexpr int32_t MAX_LOAD_STRING = 128;
 
 static auto *logger = new logging::Logger("Main");
+
+std::unique_ptr<Game> game;
 
 ATOM RegisterWindowClass();
 BOOL InitInstance(int32_t);
@@ -118,7 +119,7 @@ BOOL InitInstance(const int32_t nCmdShow) {
 
     if (!windowHandle) {
         logger->fatal("Failed to create the main window. Error: ", DecodeError(GetLastError()));
-        return FALSE;
+        return false;
     }
 
     ShowWindow(windowHandle, nCmdShow);
@@ -127,7 +128,7 @@ BOOL InitInstance(const int32_t nCmdShow) {
     return true;
 }
 
-void StartNewGame(HWND windowHandle, Difficulty difficulty) {
+void StartNewGame(HWND windowHandle, const Difficulty difficulty) {
     if (game) {
         game.reset();
     }
@@ -136,8 +137,8 @@ void StartNewGame(HWND windowHandle, Difficulty difficulty) {
 
     RECT rect = game->start(difficulty);
 
-    const LONG style = GetWindowLongPtr(windowHandle, GWL_STYLE);
-    const LONG exStyle = GetWindowLongPtr(windowHandle, GWL_EXSTYLE);
+    const LONG_PTR style = GetWindowLongPtr(windowHandle, GWL_STYLE);
+    const LONG_PTR exStyle = GetWindowLongPtr(windowHandle, GWL_EXSTYLE);
 
     AdjustWindowRectEx(&rect, style, true, exStyle);
 

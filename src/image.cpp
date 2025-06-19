@@ -1,9 +1,9 @@
 #include <memory>
 
-#include "image.hpp"
+#include "SweepMiner/framework.h"
 
-#include "include/framework.h"
-#include "logger.hpp"
+#include "image.hpp"
+#include "logging.hpp"
 #include "util.hpp"
 
 static auto logger = new logging::Logger("Image");

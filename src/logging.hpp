@@ -7,8 +7,6 @@
 #include <chrono>
 #include <iostream>
 
-#include "include/framework.h"
-
 namespace logging {
     enum class LogLevel {
         Verbose = 0,
@@ -19,20 +17,6 @@ namespace logging {
         Fatal,
         Silent
     };
-
-    struct LogMeta {
-        const LogLevel level;
-        const char *label;
-        const char *color;
-    };
-
-    constexpr LogMeta VerboseMeta = {LogLevel::Verbose, "VERBOSE", "\033[96m"};
-    constexpr LogMeta DebugMeta = {LogLevel::Debug, "  DEBUG", "\033[95m"};
-    constexpr LogMeta InfoMeta = {LogLevel::Info, "   INFO", "\033[32m"};
-    constexpr LogMeta WarnMeta = {LogLevel::Warn, "   WARN", "\033[33m"};
-    constexpr LogMeta ErrorMeta = {LogLevel::Error, "  ERROR", "\033[31m"};
-    constexpr LogMeta FatalMeta = {LogLevel::Fatal, "  FATAL", "\033[1m"};
-    constexpr LogMeta SilentMeta = {LogLevel::Silent, " SILENT", "\033[0m"};
 
     class Logger {
     public:
@@ -85,6 +69,20 @@ namespace logging {
         ~Logger() = default;
 
     private:
+        struct LogMeta {
+            const LogLevel level;
+            const char *label;
+            const char *color;
+        };
+
+        static constexpr LogMeta VerboseMeta = {LogLevel::Verbose, "VERBOSE", "\033[96m"};
+        static constexpr LogMeta DebugMeta = {LogLevel::Debug, "  DEBUG", "\033[95m"};
+        static constexpr LogMeta InfoMeta = {LogLevel::Info, "   INFO", "\033[32m"};
+        static constexpr LogMeta WarnMeta = {LogLevel::Warn, "   WARN", "\033[33m"};
+        static constexpr LogMeta ErrorMeta = {LogLevel::Error, "  ERROR", "\033[31m"};
+        static constexpr LogMeta FatalMeta = {LogLevel::Fatal, "  FATAL", "\033[1m"};
+        static constexpr LogMeta SilentMeta = {LogLevel::Silent, " SILENT", "\033[0m"};
+
         std::string name;
         std::string pid;
         LogLevel logLevel;

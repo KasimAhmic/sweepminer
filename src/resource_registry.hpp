@@ -8,11 +8,11 @@ public:
     ResourceRegistry() = default;
     ~ResourceRegistry() = default;
 
-    void AddResource(const Name& name, T resource) {
+    void Add(const Name& name, T resource) {
         resources[name] = resource;
     }
 
-    T GetResource(const Name& name) const {
+    T Get(const Name& name) const {
         auto it = resources.find(name);
         return (it != resources.end()) ? it->second : nullptr;
     }

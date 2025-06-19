@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 
-#include "include/framework.h"
+#include "SweepMiner/framework.h"
 
 #define RECT_WIDTH(rect) (rect.right - rect.left)
 #define RECT_HEIGHT(rect) (rect.bottom - rect.top)
@@ -32,13 +32,41 @@ inline HWND GetClickedControl(HWND parentHandle, const LPARAM longParam) {
     return ChildWindowFromPoint(parentHandle, clickLocation);
 }
 
-inline std::shared_ptr<HBRUSH> CreateBrush(COLORREF color) {
-    return std::shared_ptr<HBRUSH>(
+inline std::shared_ptr<HBRUSH> MakeSolidBrush(COLORREF color) {
+    return {
         new HBRUSH(CreateSolidBrush(color)),
-        [](HBRUSH* brush) {
+        [](HBRUSH *brush) {
             if (brush) {
                 DeleteObject(brush);
             }
         }
-    );
+    };
+}
+
+inline std::shared_ptr<HFONT> MakeFont(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight,
+                                       DWORD bItalic, DWORD bUnderline, DWORD bStrikeOut, DWORD iCharSet,
+                                       DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality,
+                                       DWORD iPitchAndFamily, LPCWSTR pszFaceName) {
+    return {
+        new HFONT(CreateFont(
+            cHeight,
+            cWidth,
+            cEscapement,
+            cOrientation,
+            cWeight,
+            bItalic,
+            bUnderline,
+            bStrikeOut,
+            iCharSet,
+            iOutPrecision,
+            iClipPrecision,
+            iQuality,
+            iPitchAndFamily,
+            pszFaceName)),
+        [](HFONT *font) {
+            if (font) {
+                DeleteObject(font);
+            }
+        }
+    };
 }

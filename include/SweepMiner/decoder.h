@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 /**
@@ -8,7 +8,7 @@
  *
  * @link https://gitlab.winehq.org/wine/wine/-/wikis/Wine-Developer's-Guide/List-of-Windows-Messages
  */
-inline std::map<UINT, std::string> MESSAGE_MAP{
+inline std::unordered_map<UINT, std::string> MESSAGE_MAP{
     {0, "WM_NULL"},
     {1, "WM_CREATE"},
     {2, "WM_DESTROY"},

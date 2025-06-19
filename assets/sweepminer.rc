@@ -1,6 +1,7 @@
-#include "../include/resource.h"
-#include "../include/targetver.h"
 #include "windows.h"
+
+#include "SweepMiner/resource.h"
+#include "SweepMiner/targetver.h"
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 

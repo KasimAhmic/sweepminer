@@ -1,32 +1,16 @@
-#include "include/framework.h"
-#include "util.hpp"
-#include "cell.hpp"
-
 #include <unordered_map>
 
-#include "include/decoder.h"
-#include "include/handles.h"
-#include "include/resource.h"
+#include "SweepMiner/framework.h"
+#include "SweepMiner/decoder.h"
+#include "SweepMiner/resource.h"
+
+#include "util.hpp"
+#include "cell.hpp"
+#include "game.hpp"
 #include "image.hpp"
-#include "logger.hpp"
+#include "logging.hpp"
 
 static auto *logger = new logging::Logger("Cell");
-
-const HFONT numberFontHandle = CreateFont(
-    -CELL_SIZE / 2,
-    0,
-    0,
-    0,
-    FW_BOLD,
-    FALSE,
-    FALSE,
-    FALSE,
-    DEFAULT_CHARSET,
-    OUT_DEFAULT_PRECIS,
-    CLIP_DEFAULT_PRECIS,
-    CLEARTYPE_QUALITY,
-    VARIABLE_PITCH,
-    L"Segoe UI");
 
 const std::unordered_map<int8_t, COLORREF> NUMBER_COLORS{
     {1, RGB(0, 0, 255)},
@@ -40,6 +24,7 @@ const std::unordered_map<int8_t, COLORREF> NUMBER_COLORS{
 };
 
 Cell::Cell(
+    Game& game,
     const std::shared_ptr<ResourceContext> &resourceContext,
     HINSTANCE instanceHandle,
     HWND windowHandle,
@@ -49,15 +34,16 @@ Cell::Cell(
     const int32_t column,
     const int32_t row,
     const bool hasMine
-) {
-    this->resourceContext = resourceContext;
-    this->id = id;
-    this->state = State::HIDDEN;
-    this->surroundingMineCount = 0;
-    this->containsMine = hasMine;
-    this->column = column;
-    this->row = row;
-
+)
+    : game(game),
+      id(id),
+      state(State::HIDDEN),
+      surroundingMineCount(0),
+      containsMine(hasMine),
+      row(row),
+      column(column),
+      resources(resourceContext)
+{
     // TODO: This is dumb, don't create a window for each cell. Go full custom draw.
     this->handle = CreateWindowEx(
         0,
@@ -94,10 +80,10 @@ LRESULT Cell::BoxProc(
     WPARAM wordParam,
     LPARAM longParam,
     UINT_PTR idSubclass,
-    DWORD_PTR boxPointer) {
+    DWORD_PTR cellPointer) {
     logger->verbose("Handle: ", windowHandle, " | Message: ", MESSAGE_MAP[message]);
 
-    const auto box = reinterpret_cast<Cell *>(boxPointer);
+    const auto box = reinterpret_cast<Cell *>(cellPointer);
 
     if (!box) {
         logger->warn("Cell pointer is null");
@@ -119,8 +105,10 @@ LRESULT Cell::BoxProc(
         }
 
         case WM_RBUTTONDOWN: {
-            box->mark();
-            PlaySound(MAKEINTRESOURCE(IDR_FLAGGED), GetModuleHandle(nullptr), SND_RESOURCE | SND_ASYNC);
+            if (!box->isRevealed()) {
+                box->mark();
+                PlaySound(MAKEINTRESOURCE(IDR_FLAGGED), GetModuleHandle(nullptr), SND_RESOURCE | SND_ASYNC);
+            }
             break;
         }
 
@@ -141,7 +129,7 @@ LRESULT Cell::BoxProc(
             boxRect.top += CELL_PADDING;
             boxRect.right -= CELL_PADDING;
             boxRect.bottom -= CELL_PADDING;
-            FillRect(hdc, &boxRect, box->resourceContext->GetResource(Brush::HIDDEN_BACKGROUND));
+            FillRect(hdc, &boxRect, box->resources->Get(Brush::HIDDEN_BACKGROUND));
 
             switch (box->state) {
                 case State::HIDDEN: {
@@ -153,7 +141,7 @@ LRESULT Cell::BoxProc(
                     box->DrawBorder(hdc, &borderRect);
                     DrawImage(
                         hdc,
-                        box->resourceContext->GetResource(Image::FLAG),
+                        box->resources->Get(Image::FLAG),
                         IMAGE_PADDING,
                         IMAGE_PADDING,
                         RECT_WIDTH(imageRect),
@@ -165,7 +153,7 @@ LRESULT Cell::BoxProc(
                     box->DrawBorder(hdc, &borderRect);
                     DrawImage(
                         hdc,
-                        box->resourceContext->GetResource(Image::QUESTION),
+                        box->resources->Get(Image::QUESTION),
                         IMAGE_PADDING,
                         IMAGE_PADDING,
                         RECT_WIDTH(imageRect),
@@ -175,10 +163,10 @@ LRESULT Cell::BoxProc(
 
                 case State::REVEALED: {
                     if (box->containsMine) {
-                        FillRect(hdc, &boxRect, box->resourceContext->GetResource(Brush::EXPLODED_BACKGROUND));
+                        FillRect(hdc, &boxRect, box->resources->Get(Brush::EXPLODED_BACKGROUND));
                         DrawImage(
                             hdc,
-                            box->resourceContext->GetResource(Image::MINE),
+                            box->resources->Get(Image::MINE),
                             IMAGE_PADDING,
                             IMAGE_PADDING,
                             RECT_WIDTH(imageRect),
@@ -190,7 +178,7 @@ LRESULT Cell::BoxProc(
 
                         SetTextColor(hdc, NUMBER_COLORS.at(box->surroundingMineCount));
                         SetBkMode(hdc, TRANSPARENT);
-                        const auto oldFont = static_cast<HFONT>(SelectObject(hdc, numberFontHandle));
+                        const auto oldFont = SelectObject(hdc, box->resources->Get(Font::NUMBER));
                         DrawText(
                             hdc,
                             std::to_wstring(box->surroundingMineCount).c_str(),
@@ -217,10 +205,6 @@ LRESULT Cell::BoxProc(
 }
 
 void Cell::mark() {
-    if (this->state == State::REVEALED) {
-        return;
-    }
-
     logger->debug("Cell::mark");
 
     this->state = [&] {
@@ -241,7 +225,7 @@ void Cell::reveal() {
         return;
     }
 
-    game->revealConnectedEmptyCells(this->column, this->row);
+    this->game.revealConnectedEmptyCells(this->column, this->row);
 }
 
 void Cell::revealCell() {

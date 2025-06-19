@@ -1,7 +1,10 @@
 #pragma once
 
-#include "include/framework.h"
+#include "SweepMiner/framework.h"
+
 #include "resource_context.hpp"
+
+class Game; // Forward declaration
 
 constexpr int32_t SCALE = 4;
 constexpr int32_t CELL_SIZE = 16 * SCALE;
@@ -19,6 +22,7 @@ enum class State {
 class Cell {
 public:
     Cell(
+        Game &game,
         const std::shared_ptr<ResourceContext> &resourceContext,
         HINSTANCE instanceHandle,
         HWND windowHandle,
@@ -37,7 +41,7 @@ public:
         WPARAM wordParam,
         LPARAM longParam,
         UINT_PTR idSubclass,
-        DWORD_PTR boxPointer);
+        DWORD_PTR cellPointer);
 
     void mark();
     void reveal();
@@ -51,6 +55,7 @@ public:
     [[nodiscard]] bool isMarked() const { return this->state == State::FLAGGED || this->state == State::QUESTIONED; }
 
 private:
+    Game& game;
     int32_t id;
     HWND handle;
     State state;
@@ -58,7 +63,7 @@ private:
     bool containsMine;
     int32_t row;
     int32_t column;
-    std::shared_ptr<ResourceContext> resourceContext;
+    std::shared_ptr<ResourceContext> resources;
 
     static void DrawBorder(HDC hdc, LPRECT rect);
 };

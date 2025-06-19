@@ -1,7 +1,8 @@
 #pragma once
 
 #include <memory>
-#include "include/framework.h"
+
+#include "SweepMiner/framework.h"
 
 std::unique_ptr<Gdiplus::Image> LoadImageFromResource(HINSTANCE instanceHandle, int32_t resourceId);
 

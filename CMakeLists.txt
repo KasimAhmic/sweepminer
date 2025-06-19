@@ -11,20 +11,18 @@ add_link_options(-mwindows -municode)
 
 add_executable(
         ${PROJECT_NAME} WIN32
-        src/image.cpp
-        src/image.hpp
-        src/timer.cpp
-        src/timer.hpp
         src/cell.cpp
-        src/cell.hpp
-        src/resource_registry.hpp
-        src/resource_context.hpp
         src/game.cpp
-        src/game.hpp
+        src/image.cpp
+        src/timer.cpp
         src/main.cpp
 )
 
-target_sources(${PROJECT_NAME} PRIVATE src/resources/sweepminer.rc)
+target_include_directories(${PROJECT_NAME} PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+target_sources(${PROJECT_NAME} PRIVATE assets/sweepminer.rc)
 
 target_link_libraries(
         ${PROJECT_NAME}

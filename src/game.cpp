@@ -5,10 +5,11 @@
 #include <unordered_set>
 #include <random>
 
-#include "include/resource.h"
+#include "SweepMiner/resource.h"
+
 #include "cell.hpp"
 #include "image.hpp"
-#include "logger.hpp"
+#include "logging.hpp"
 #include "pair_hash.hpp"
 #include "util.hpp"
 
@@ -52,21 +53,34 @@ Game::Game(HINSTANCE instanceHandle, HWND windowHandle) {
 }
 
 ResourceContext Game::LoadResources() const {
-    ResourceContext resourceContext{
-        std::make_shared<ResourceRegistry<std::shared_ptr<Gdiplus::Image>, Image>>(),
-        std::make_shared<ResourceRegistry<std::shared_ptr<HBRUSH>, Brush>>()
-    };
+    auto *ctx = new ResourceContext();
 
-    resourceContext.imageRegistry->AddResource(Image::MINE, LoadImageFromResource(instanceHandle, IDR_MINE));
-    resourceContext.imageRegistry->AddResource(Image::FLAG, LoadImageFromResource(instanceHandle, IDR_FLAG));
-    resourceContext.imageRegistry->AddResource(Image::QUESTION, LoadImageFromResource(instanceHandle, IDR_QUESTION));
+    ctx->Add(Image::MINE, LoadImageFromResource(instanceHandle, IDR_MINE));
+    ctx->Add(Image::FLAG, LoadImageFromResource(instanceHandle, IDR_FLAG));
+    ctx->Add(Image::QUESTION, LoadImageFromResource(instanceHandle, IDR_QUESTION));
 
-    resourceContext.brushRegistry->AddResource(Brush::HIDDEN_BACKGROUND, CreateBrush(RGB(192, 192, 192)));
-    resourceContext.brushRegistry->AddResource(Brush::BORDER_HIGHLIGHT, CreateBrush(RGB(255, 255, 255)));
-    resourceContext.brushRegistry->AddResource(Brush::BORDER_SHADOW, CreateBrush(RGB(128, 128, 128)));
-    resourceContext.brushRegistry->AddResource(Brush::EXPLODED_BACKGROUND, CreateBrush(RGB(255, 0, 0)));
+    ctx->Add(Brush::HIDDEN_BACKGROUND, MakeSolidBrush(RGB(192, 192, 192)));
+    ctx->Add(Brush::BORDER_HIGHLIGHT, MakeSolidBrush(RGB(255, 255, 255)));
+    ctx->Add(Brush::BORDER_SHADOW, MakeSolidBrush(RGB(128, 128, 128)));
+    ctx->Add(Brush::EXPLODED_BACKGROUND, MakeSolidBrush(RGB(255, 0, 0)));
 
-    return resourceContext;
+    ctx->Add(Font::NUMBER, MakeFont(
+                 -CELL_SIZE / 2,
+                 0,
+                 0,
+                 0,
+                 FW_BOLD,
+                 false,
+                 false,
+                 false,
+                 DEFAULT_CHARSET,
+                 OUT_DEFAULT_PRECIS,
+                 CLIP_DEFAULT_PRECIS,
+                 CLEARTYPE_QUALITY,
+                 VARIABLE_PITCH,
+                 L"Segoe UI"));
+
+    return *ctx;
 }
 
 RECT Game::start(const Difficulty difficulty) {
@@ -114,6 +128,7 @@ RECT Game::start(const int32_t width, const int32_t height, const int32_t mines)
 
         for (int32_t column = 0; column < this->columnCount; column++) {
             cellRow.push_back(std::make_unique<Cell>(
+                *this,
                 this->resourceContext,
                 this->instanceHandle,
                 this->windowHandle,
@@ -136,7 +151,7 @@ RECT Game::start(const int32_t width, const int32_t height, const int32_t mines)
         for (int32_t column = 0; column < this->columnCount; column++) {
             int32_t surroundingMineCount = 0;
 
-            for (const auto [deltaColumn, deltaRow] : EIGHT_DIR_CELL_OFFSETS) {
+            for (const auto [deltaColumn, deltaRow]: EIGHT_DIR_CELL_OFFSETS) {
                 const int32_t newRow = row + deltaRow;
                 const int32_t newColumn = column + deltaColumn;
 
@@ -147,7 +162,7 @@ RECT Game::start(const int32_t width, const int32_t height, const int32_t mines)
                     continue;
                 }
 
-                if (const Cell* cell = this->cells[newRow][newColumn].get(); cell != nullptr && cell->hasMine()) {
+                if (const Cell *cell = this->cells[newRow][newColumn].get(); cell != nullptr && cell->hasMine()) {
                     surroundingMineCount++;
                 }
             }
@@ -201,7 +216,7 @@ void Game::revealConnectedEmptyCells(int32_t selectedCellX, int32_t selectedCell
             continue;
         }
 
-        for (const auto [deltaColumn, deltaRow] : FOUR_DIR_CELL_OFFSETS) {
+        for (const auto [deltaColumn, deltaRow]: FOUR_DIR_CELL_OFFSETS) {
             queue.emplace(column + deltaColumn, row + deltaRow);
         }
     }
@@ -210,7 +225,7 @@ void Game::revealConnectedEmptyCells(int32_t selectedCellX, int32_t selectedCell
 void Game::showMines() const {
     for (int32_t row = 0; row < this->rowCount; row++) {
         for (int32_t column = 0; column < this->columnCount; column++) {
-            if (Cell* cell = this->cells[row][column].get(); cell != nullptr && cell->hasMine()) {
+            if (Cell *cell = this->cells[row][column].get(); cell != nullptr && cell->hasMine()) {
                 cell->revealCell();
             }
         }
@@ -220,7 +235,7 @@ void Game::showMines() const {
 void Game::showCounts() const {
     for (int32_t row = 0; row < this->rowCount; row++) {
         for (int32_t column = 0; column < this->columnCount; column++) {
-            if (Cell* cell = this->cells[row][column].get(); cell != nullptr && cell->getSurroundingMineCount() > 0) {
+            if (Cell *cell = this->cells[row][column].get(); cell != nullptr && cell->getSurroundingMineCount() > 0 && !cell->hasMine()) {
                 cell->revealCell();
             }
         }
@@ -230,7 +245,7 @@ void Game::showCounts() const {
 void Game::revealAll() const {
     for (int32_t row = 0; row < this->rowCount; row++) {
         for (int32_t column = 0; column < this->columnCount; column++) {
-            if (Cell* cell = this->cells[row][column].get(); cell != nullptr) {
+            if (Cell *cell = this->cells[row][column].get(); cell != nullptr) {
                 cell->revealCell();
             }
         }

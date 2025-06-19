@@ -40,4 +40,4 @@
 // Controls
 #define IDC_STATIC               -1
 #define IDC_SWEEP_MINER         150
-#define IDC_FIRST_BOX           151
+#define IDC_FIRST_BOX           200
