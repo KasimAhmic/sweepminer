@@ -7,6 +7,7 @@
 
 #include "game.hpp"
 #include "art.hpp"
+#include "mouse.hpp"
 #include "pair_hash.hpp"
 
 constexpr uint8_t SPACING = 6 * SCALE;
@@ -243,9 +244,18 @@ void Game::revealConnectedCells(uint16_t x, uint16_t y) const {
 }
 
 
-void Game::handleClick(const SDL_MouseButtonEvent &button) const {
-    const auto column = static_cast<uint16_t>((button.x - CELL_GRID_OFFSET_X - THICK_BORDER_WIDTH * 2) / CELL_SIZE);
-    const auto row = static_cast<uint16_t>((button.y - CELL_GRID_OFFSET_Y - THICK_BORDER_WIDTH * 2) / CELL_SIZE);
+void Game::handleMouseEvent() const {
+    const auto [mouseX, mouseY] = Mouse::getPosition();
+
+    const int32_t gridX = mouseX - CELL_GRID_OFFSET_X - THICK_BORDER_WIDTH * 2;
+    const int32_t gridY = mouseY - CELL_GRID_OFFSET_Y - THICK_BORDER_WIDTH * 2;
+
+    if (gridX < 0 || gridY < 0) {
+        return;
+    }
+
+    const int32_t column = gridX / CELL_SIZE;
+    const int32_t row = gridY / CELL_SIZE;
 
     if (column >= this->columns || row >= this->rows) {
         return;
