@@ -12,6 +12,7 @@ constexpr uint8_t CELL_SIZE = 16 * SCALE;
 constexpr uint8_t THIN_BORDER_WIDTH = 1 * SCALE;
 constexpr uint8_t MEDIUM_BORDER_WIDTH = 2 * SCALE;
 constexpr uint8_t THICK_BORDER_WIDTH = 3 * SCALE;
+
 constexpr Color BACKGROUND_COLOR(192, 192, 192, 255);
 constexpr Color HOVERED_COLOR(150, 150, 150, 255);
 constexpr Color BORDER_HIGHLIGHT_COLOR(255, 255, 255, 255);
@@ -27,7 +28,7 @@ enum class State {
 
 class Cell {
 public:
-    Cell(Game &game, uint16_t id, uint16_t xPosition, uint16_t yPosition, uint8_t column, uint8_t row, bool containsMine, const std::shared_ptr<ResourceContext> &resourceContext);
+    Cell(Game &game, uint16_t id, uint16_t xPosition, uint16_t yPosition, uint8_t column, uint8_t row, bool containsMine, const std::shared_ptr<ResourceContext> &resourceContext, float scale);
 
     ~Cell() = default;
 
@@ -58,6 +59,7 @@ private:
     uint8_t surroundingMines;
     bool containsMine;
     std::shared_ptr<ResourceContext> resourceContext;
+    float scale;
 
     [[nodiscard]] SDL_Texture* getMineCountTexture() const;
 };

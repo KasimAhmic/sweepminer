@@ -54,7 +54,7 @@ constexpr std::array CELL_COLORS = {
     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_EIGHT, "8", SDL_Color(128, 128, 128, 255))
 };
 
-Game::Game() {
+Game::Game(const float scale) {
     this->columns = 0;
     this->rows = 0;
     this->mines = 0;
@@ -63,6 +63,7 @@ Game::Game() {
     this->clock = 0;
     this->timer = std::make_unique<Timer>([this] { this->tick(); }, 1000);
     this->resourceContext = std::make_shared<ResourceContext>();
+    this->scale = scale;
 }
 
 SDL_Rect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t mines) {
@@ -95,7 +96,8 @@ SDL_Rect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t
                 col,
                 row,
                 mineCells.contains(id),
-                this->resourceContext));
+                this->resourceContext,
+                this->scale));
             id++;
         }
 
@@ -151,21 +153,21 @@ void Game::draw(SDL_Renderer *renderer, const int32_t windowWidth, const int32_t
     // Draw the window border
     SetRenderDrawColor(renderer, BACKGROUND_COLOR);
     const SDL_FRect rect = {
-        THICK_BORDER_WIDTH,
-        THICK_BORDER_WIDTH,
-        static_cast<float>(windowWidth),
-        static_cast<float>(windowHeight)
+        THICK_BORDER_WIDTH * this->scale,
+        THICK_BORDER_WIDTH * this->scale,
+        static_cast<float>(windowWidth) * this->scale,
+        static_cast<float>(windowHeight) * this->scale
     };
     SDL_RenderFillRect(renderer, &rect);
 
     // Draw the scoreboard
     DrawBox(
         renderer,
-        SCOREBOARD_OFFSET,
-        SCOREBOARD_OFFSET,
-        static_cast<float>(windowWidth - SCOREBOARD_OFFSET * 2 + MEDIUM_BORDER_WIDTH),
-        37.0f * SCALE,
-        MEDIUM_BORDER_WIDTH,
+        SCOREBOARD_OFFSET * this->scale,
+        SCOREBOARD_OFFSET * this->scale,
+        static_cast<float>(windowWidth - SCOREBOARD_OFFSET * 2 + MEDIUM_BORDER_WIDTH) * this->scale,
+        37.0f * SCALE * this->scale,
+        MEDIUM_BORDER_WIDTH * this->scale,
         BACKGROUND_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
@@ -173,11 +175,11 @@ void Game::draw(SDL_Renderer *renderer, const int32_t windowWidth, const int32_t
     // Draw the cell grid border
     DrawBox(
         renderer,
-        THICK_BORDER_WIDTH + CELL_GRID_OFFSET_X,
-        THICK_BORDER_WIDTH + CELL_GRID_OFFSET_Y,
-        static_cast<float>(CELL_SIZE * columns + THICK_BORDER_WIDTH * 2),
-        static_cast<float>(CELL_SIZE * rows + THICK_BORDER_WIDTH * 2),
-        THICK_BORDER_WIDTH,
+        (THICK_BORDER_WIDTH + CELL_GRID_OFFSET_X) * this->scale,
+        (THICK_BORDER_WIDTH + CELL_GRID_OFFSET_Y) * this->scale,
+        static_cast<float>(CELL_SIZE * columns + THICK_BORDER_WIDTH * 2) * this->scale,
+        static_cast<float>(CELL_SIZE * rows + THICK_BORDER_WIDTH * 2) * this->scale,
+        THICK_BORDER_WIDTH * this->scale,
         BACKGROUND_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
@@ -260,23 +262,25 @@ void Game::loadResources(SDL_Renderer* renderer) const {
 }
 
 void Game::createCellCountFont() const {
-    const std::string fontPath = "assets/fonts/Inter-VariableFont.ttf";
+    const std::string fontPath = "assets/fonts/PublicPixel.ttf";
 
-    TTF_Font *font = TTF_OpenFont(fontPath.c_str(), CELL_SIZE);
+    TTF_Font *font = TTF_OpenFont(fontPath.c_str(), 1);
 
     if (!font) {
         SDL_Log("Failed to load font %s: %s\n", fontPath.c_str(), SDL_GetError());
         return;
     }
 
-    TTF_SetFontStyle(font, TTF_STYLE_BOLD);
-
     this->resourceContext->add(Font::NUMBER, font);
 }
 
 void Game::createCellCountTextures(SDL_Renderer* renderer) const {
     for (const auto [name, text, color] : CELL_COLORS) {
-        SDL_Surface* surface = TTF_RenderText_Solid(this->resourceContext->get(Font::NUMBER), text.data(), text.length(), color);
+        SDL_Surface* surface = TTF_RenderText_Solid(
+            this->resourceContext->get(Font::NUMBER),
+            text.data(),
+            text.length(),
+            color);
 
         this->resourceContext->add(name, SDL_CreateTextureFromSurface(renderer, surface));
 

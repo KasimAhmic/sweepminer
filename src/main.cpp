@@ -1,3 +1,5 @@
+#define SDL_MAIN_USE_CALLBACKS 1
+
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_init.h>
@@ -37,20 +39,22 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
     SDL_Log("base path: %s", SDL_GetBasePath());
 
-    if (game) {
-        game.reset();
-    }
-
-    game = std::make_unique<Game>();
-
-    const SDL_Rect gameSize = game->newGame(Difficulty::BEGINNER);
-
-    SDL_Window* window = SDL_CreateWindow("SweepMiner", gameSize.w, gameSize.h, SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    SDL_Window* window = SDL_CreateWindow("SweepMiner", 0, 0, SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
     if (!window) {
         SDL_Log("Couldn't create window: %s\n", SDL_GetError());
         return SDL_Fail();
     }
+
+    if (game) {
+        game.reset();
+    }
+
+    game = std::make_unique<Game>(SDL_GetWindowDisplayScale(window));
+
+    const SDL_Rect gameSize = game->newGame(Difficulty::BEGINNER);
+
+    SDL_SetWindowSize(window, gameSize.w, gameSize.h);
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
@@ -148,8 +152,4 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result) {
     TTF_Quit();
     SDL_Log("Application quit successfully!");
     SDL_Quit();
-}
-
-int SDL_main(const int argc, char **argv) {
-    return SDL_EnterAppMainCallbacks(argc, argv, SDL_AppInit, SDL_AppIterate, SDL_AppEvent, SDL_AppQuit);
 }
