@@ -55,18 +55,18 @@ void Cell::draw(SDL_Renderer *renderer) const {
     if (this->state == State::REVEALED) {
         SetRenderDrawColor(renderer, BORDER_SHADOW_COLOR);
 
-        for (uint8_t i = 0; i < SCALE; i++) {
+        for (uint8_t i = 0; i < SCALE * this->scale; i++) {
             SDL_RenderLine(renderer,
                         this->xPosition * this->scale,
-                        (this->yPosition + i) * this->scale,
-                        (this->xPosition + CELL_SIZE - 1) * this->scale,
-                        (this->yPosition + i) * this->scale);
+                        this->yPosition * this->scale + i,
+                        (this->xPosition + CELL_SIZE) * this->scale - 1,
+                        this->yPosition * this->scale + i);
 
             SDL_RenderLine(renderer,
-                        (this->xPosition + i) * this->scale,
+                        this->xPosition * this->scale + i,
                         this->yPosition * this->scale,
-                        (this->xPosition + i) * this->scale,
-                        (this->yPosition + CELL_SIZE - 1) * this->scale);
+                        this->xPosition * this->scale + i,
+                        (this->yPosition + CELL_SIZE) * this->scale - 1);
         }
 
         if (this->hasMine()) {
