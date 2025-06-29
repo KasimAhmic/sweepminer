@@ -1,7 +1,9 @@
 #pragma once
 
 #include <memory>
-#include <gdiplus.h>
+
+#include "SDL3/SDL.h"
+#include "SDL3_ttf/SDL_ttf.h"
 
 #include "resource_registry.hpp"
 
@@ -28,42 +30,43 @@ enum class Font {
     NUMBER
 };
 
+enum class Texture {
+    MINE_ONE,
+    MINE_TWO,
+    MINE_THREE,
+    MINE_FOUR,
+    MINE_FIVE,
+    MINE_SIX,
+    MINE_SEVEN,
+    MINE_EIGHT,
+};
+
 class ResourceContext {
 public:
     ResourceContext() {
-        this->images = std::make_shared<ResourceRegistry<std::shared_ptr<Gdiplus::Image>, Image>>();
-        this->brushes = std::make_shared<ResourceRegistry<std::shared_ptr<HBRUSH>, Brush>>();
-        this->fonts = std::make_shared<ResourceRegistry<std::shared_ptr<HFONT>, Font>>();
+        this->fonts = std::make_shared<ResourceRegistry<TTF_Font*, Font>>();
+        this->textures = std::make_shared<ResourceRegistry<SDL_Texture*, Texture>>();
     }
 
     ~ResourceContext() = default;
 
-    void Add(const Image name, const std::shared_ptr<Gdiplus::Image> &image) const {
-        this->images->Add(name, image);
+    void add(const Font name, TTF_Font* font) const {
+        this->fonts->add(name, font);
     }
 
-    void Add(const Brush name, const std::shared_ptr<HBRUSH> &brush) const {
-        this->brushes->Add(name, brush);
+    [[nodiscard]] TTF_Font* get(const Font font) const {
+        return this->fonts->get(font);
     }
 
-    void Add(const Font name, const std::shared_ptr<HFONT> &font) const {
-        this->fonts->Add(name, font);
+    void add(const Texture name, SDL_Texture* texture) const {
+        this->textures->add(name, texture);
     }
 
-    [[nodiscard]] std::shared_ptr<Gdiplus::Image> Get(const Image image) const {
-        return this->images->Get(image);
-    }
-
-    [[nodiscard]] HBRUSH Get(const Brush brush) const {
-        return *this->brushes->Get(brush);
-    }
-
-    [[nodiscard]] HFONT Get(const Font font) const {
-        return *this->fonts->Get(font);
+    [[nodiscard]] SDL_Texture* get(const Texture texture) const {
+        return this->textures->get(texture);
     }
 
 private:
-    std::shared_ptr<ResourceRegistry<std::shared_ptr<Gdiplus::Image>, Image>> images;
-    std::shared_ptr<ResourceRegistry<std::shared_ptr<HBRUSH>, Brush>> brushes;
-    std::shared_ptr<ResourceRegistry<std::shared_ptr<HFONT>, Font>> fonts;
+    std::shared_ptr<ResourceRegistry<TTF_Font*, Font>> fonts;
+    std::shared_ptr<ResourceRegistry<SDL_Texture*, Texture>> textures;
 };

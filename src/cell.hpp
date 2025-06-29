@@ -1,19 +1,25 @@
 #pragma once
 
-#include "SweepMiner/framework.hpp"
+#include <SDL3/SDL.h>
 
+#include "color.hpp"
 #include "resource_context.hpp"
 
 class Game; // Forward declaration
 
-constexpr int32_t SCALE = 4;
-constexpr int32_t CELL_SIZE = 16 * SCALE;
-constexpr int32_t CELL_PADDING = 0;
-constexpr int32_t IMAGE_PADDING = 3 * SCALE;
-constexpr int32_t BORDER_WIDTH = 2 * SCALE;
+constexpr uint8_t SCALE = 3;
+constexpr uint8_t CELL_SIZE = 16 * SCALE;
+constexpr uint8_t THIN_BORDER_WIDTH = 1 * SCALE;
+constexpr uint8_t MEDIUM_BORDER_WIDTH = 2 * SCALE;
+constexpr uint8_t THICK_BORDER_WIDTH = 3 * SCALE;
+constexpr Color BACKGROUND_COLOR(192, 192, 192, 255);
+constexpr Color HOVERED_COLOR(150, 150, 150, 255);
+constexpr Color BORDER_HIGHLIGHT_COLOR(255, 255, 255, 255);
+constexpr Color BORDER_SHADOW_COLOR(128, 128, 128, 255);
 
 enum class State {
     HIDDEN,
+    HOVERED,
     FLAGGED,
     QUESTIONED,
     REVEALED,
@@ -21,49 +27,37 @@ enum class State {
 
 class Cell {
 public:
-    Cell(
-        Game &game,
-        const std::shared_ptr<ResourceContext> &resourceContext,
-        HINSTANCE instanceHandle,
-        HWND windowHandle,
-        int32_t id,
-        int32_t xPosition,
-        int32_t yPosition,
-        int32_t column,
-        int32_t row,
-        bool hasMine);
+    Cell(Game &game, uint16_t id, uint16_t xPosition, uint16_t yPosition, uint8_t column, uint8_t row, bool containsMine, const std::shared_ptr<ResourceContext> &resourceContext);
 
-    ~Cell();
+    ~Cell() = default;
 
-    static LRESULT CALLBACK BoxProc(
-        HWND windowHandle,
-        UINT message,
-        WPARAM wordParam,
-        LPARAM longParam,
-        UINT_PTR idSubclass,
-        DWORD_PTR cellPointer);
-
+    void draw(SDL_Renderer *renderer) const;
     void mark();
     void reveal();
     void revealCell();
-    void setSurroundingMineCount(int32_t count);
 
-    [[nodiscard]] HWND getHandle() const { return this->handle; }
-    [[nodiscard]] int32_t getSurroundingMineCount() const { return this->surroundingMineCount; }
+    void setSurroundingMines(const uint8_t surroundingMines) { this->surroundingMines = surroundingMines; }
+
+    [[nodiscard]] uint16_t getId() const { return this->id; }
+    [[nodiscard]] uint16_t getXPosition() const { return this->xPosition; }
+    [[nodiscard]] uint16_t getYPosition() const { return this->yPosition; }
+    [[nodiscard]] uint8_t getColumn() const { return this->column; }
+    [[nodiscard]] uint8_t getRow() const { return this->row; }
+    [[nodiscard]] State getState() const { return this->state; }
+    [[nodiscard]] uint8_t getSurroundingMines() const { return this->surroundingMines; }
     [[nodiscard]] bool hasMine() const { return this->containsMine; }
-    [[nodiscard]] bool isRevealed() const { return this->state == State::REVEALED; }
-    [[nodiscard]] bool isMarked() const { return this->state == State::FLAGGED || this->state == State::QUESTIONED; }
 
 private:
-    Game& game;
-    int32_t id;
-    HWND handle;
+    Game &game;
+    uint16_t id;
+    uint16_t xPosition;
+    uint16_t yPosition;
+    uint8_t column;
+    uint8_t row;
     State state;
-    int32_t surroundingMineCount;
+    uint8_t surroundingMines;
     bool containsMine;
-    int32_t row;
-    int32_t column;
-    std::shared_ptr<ResourceContext> resources;
+    std::shared_ptr<ResourceContext> resourceContext;
 
-    static void DrawBorder(HDC hdc, LPRECT rect);
+    [[nodiscard]] SDL_Texture* getMineCountTexture() const;
 };

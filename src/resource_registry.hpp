@@ -8,13 +8,12 @@ public:
     ResourceRegistry() = default;
     ~ResourceRegistry() = default;
 
-    void Add(const Name& name, T resource) {
+    void add(const Name& name, T resource) {
         resources[name] = resource;
     }
 
-    T Get(const Name& name) const {
-        auto it = resources.find(name);
-        return (it != resources.end()) ? it->second : nullptr;
+    T get(const Name& name) const {
+        return resources.at(name);
     }
 
 private:

@@ -1,273 +1,155 @@
-#include <iostream>
-#include <string>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+#include <SDL3/SDL_init.h>
+#include <SDL3_ttf/SDL_ttf.h>
+#include <filesystem>
 
-#include "SweepMiner/framework.hpp"
-#include "SweepMiner/decoder.hpp"
-#include "SweepMiner/resource.hpp"
-
-#include "logging.hpp"
+#include "art.hpp"
+#include "color.hpp"
 #include "game.hpp"
-#include "image.hpp"
-#include "util.hpp"
-
-constexpr int32_t MAX_LOAD_STRING = 128;
-
-static auto *logger = new logging::Logger("Main");
 
 std::unique_ptr<Game> game;
 
-ATOM RegisterWindowClass();
-BOOL InitInstance(int32_t);
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+constexpr Color WHITE(255, 255, 255, 255);
+constexpr Color BLACK(0, 0, 0, 255);
 
-WCHAR windowTitle[MAX_LOAD_STRING];
-WCHAR windowClass[MAX_LOAD_STRING];
-WCHAR githubUrl[MAX_LOAD_STRING];
-WCHAR githubIssuesUrl[MAX_LOAD_STRING];
+struct AppContext {
+    SDL_Window* window{};
+    SDL_Renderer* renderer{};
+    SDL_AppResult app_quit = SDL_APP_CONTINUE;
+};
 
-ULONG_PTR gdiPlusToken;
-HINSTANCE instanceHandle;
-
-int32_t APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                      _In_opt_ HINSTANCE hPrevInstance,
-                      _In_ LPWSTR lpCmdLine,
-                      _In_ const int32_t nShowCmd) {
-    UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
-
-    instanceHandle = hInstance;
-    std::srand(std::chrono::system_clock::now().time_since_epoch().count());
-
-    INITCOMMONCONTROLSEX icex{};
-
-    icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-    icex.dwICC = ICC_STANDARD_CLASSES;
-
-    if (!InitCommonControlsEx(&icex)) {
-        logger->warn("Initialization of common controls failed");
-    }
-
-    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-    Gdiplus::GdiplusStartup(&gdiPlusToken, &gdiplusStartupInput, nullptr);
-
-    LoadString(instanceHandle, IDS_APP_TITLE, windowTitle, MAX_LOAD_STRING);
-    LoadString(instanceHandle, IDC_SWEEP_MINER, windowClass, MAX_LOAD_STRING);
-    LoadString(instanceHandle, IDS_GITHUB_URL, githubUrl, MAX_LOAD_STRING);
-    LoadString(instanceHandle, IDS_GITHUB_ISSUES_URL, githubIssuesUrl, MAX_LOAD_STRING);
-
-    logger->debug("Window Title: ", windowTitle);
-    logger->debug("Window Class: ", windowClass);
-
-    RegisterWindowClass();
-
-    if (!InitInstance(nShowCmd)) {
-        logger->fatal("Failed to initialize the application");
-        return FALSE;
-    }
-
-    const auto acceleratorTableHandle = LoadAccelerators(instanceHandle, MAKEINTRESOURCE(IDC_SWEEP_MINER));
-
-    MSG msg{};
-
-    while (GetMessage(&msg, nullptr, 0, 0)) {
-        if (!TranslateAccelerator(msg.hwnd, acceleratorTableHandle, &msg)) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-    }
-
-    game.reset();
-    Gdiplus::GdiplusShutdown(gdiPlusToken);
-
-    return static_cast<int32_t>(msg.wParam);
+SDL_AppResult SDL_Fail(){
+    SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
+    return SDL_APP_FAILURE;
 }
 
-ATOM RegisterWindowClass() {
-    WNDCLASSEXW wcex;
-
-    wcex.cbSize = sizeof(WNDCLASSEX);
-
-    wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = WndProc;
-    wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = 0;
-    wcex.hInstance = instanceHandle;
-    wcex.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
-    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = static_cast<HBRUSH>(GetStockObject(NULL_BRUSH));
-    wcex.lpszMenuName = MAKEINTRESOURCE(IDC_SWEEP_MINER);
-    wcex.lpszClassName = windowClass;
-    wcex.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
-
-    return RegisterClassEx(&wcex);
-}
-
-BOOL InitInstance(const int32_t nCmdShow) {
-    HWND windowHandle = CreateWindowEx(
-        0,
-        windowClass,
-        windowTitle,
-        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        nullptr,
-        nullptr,
-        instanceHandle,
-        nullptr);
-
-    if (!windowHandle) {
-        logger->fatal("Failed to create the main window. Error: ", DecodeError(GetLastError()));
-        return false;
+SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC)) {
+        SDL_Log("Couldn't initialize SDL: %s\n", SDL_GetError());
+        return SDL_Fail();
     }
 
-    ShowWindow(windowHandle, nCmdShow);
-    UpdateWindow(windowHandle);
+    if (!TTF_Init()) {
+        SDL_Log("Couldn't initialise SDL_ttf: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
 
-    return true;
-}
+    SDL_Log("base path: %s", SDL_GetBasePath());
 
-void StartNewGame(HWND windowHandle, const Difficulty difficulty) {
     if (game) {
         game.reset();
     }
 
-    game = std::make_unique<Game>(instanceHandle, windowHandle);
+    game = std::make_unique<Game>();
 
-    RECT rect = game->start(difficulty);
+    const SDL_Rect gameSize = game->newGame(Difficulty::BEGINNER);
 
-    const LONG_PTR style = GetWindowLongPtr(windowHandle, GWL_STYLE);
-    const LONG_PTR exStyle = GetWindowLongPtr(windowHandle, GWL_EXSTYLE);
+    SDL_Window* window = SDL_CreateWindow("SweepMiner", gameSize.w, gameSize.h, SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
-    AdjustWindowRectEx(&rect, style, true, exStyle);
+    if (!window) {
+        SDL_Log("Couldn't create window: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
 
-    SetWindowPos(windowHandle, nullptr, 0, 0, RECT_WIDTH(rect), RECT_HEIGHT(rect), SWP_NOMOVE | SWP_NOZORDER);
-}
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
+    if (!renderer) {
+        SDL_Log("Couldn't create renderer: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
 
-LRESULT CALLBACK WndProc(HWND windowHandle, const UINT message, const WPARAM wordParam, const LPARAM longParam) {
-    logger->verbose("Handle: ", windowHandle, " | Message: ", MESSAGE_MAP[message]);
+    game->loadResources(renderer);
 
-    switch (message) {
-        case WM_CREATE: {
-            StartNewGame(windowHandle, BEGINNER);
-            break;
-        }
+    // TODO: Am I really gonna use this?
+    // load the font
+#if __ANDROID__
+    std::filesystem::path basePath = "";   // on Android we do not want to use basepath. Instead, assets are available at the root directory.
+#else
+    const char *basePathPtr = SDL_GetBasePath();
 
-        case WM_COMMAND: {
-            switch (LOWORD(wordParam)) {
-                case IDM_GAME_NEW: {
-                    logger->debug("IDM_GAME_NEW");
-                    StartNewGame(windowHandle, BEGINNER);
-                    break;
-                }
+     if (!basePathPtr){
+        return SDL_Fail();
+    }
+     const std::filesystem::path basePath = basePathPtr;
+#endif
 
-                case IDM_GAME_BEGINNER: {
-                    logger->debug("IDM_GAME_BEGINNER");
-                    StartNewGame(windowHandle, BEGINNER);
-                    break;
-                }
+    // print some information about the window
+    SDL_ShowWindow(window);
+    {
+        int32_t width, height, backBufferWidth, backBufferHeight;
 
-                case IDM_GAME_INTERMEDIATE: {
-                    logger->debug("IDM_GAME_INTERMEDIATE");
-                    StartNewGame(windowHandle, INTERMEDIATE);
-                    break;
-                }
+        SDL_GetWindowSize(window, &width, &height);
+        SDL_GetWindowSizeInPixels(window, &backBufferWidth, &backBufferHeight);
+        SDL_Log("Window size: %ix%i", width, height);
+        SDL_Log("Back buffer size: %ix%i", backBufferWidth, backBufferHeight);
 
-                case IDM_GAME_EXPERT: {
-                    logger->debug("IDM_GAME_EXPERT");
-                    StartNewGame(windowHandle, EXPERT);
-                    break;
-                }
-
-                case IDM_GAME_CUSTOM: {
-                    logger->debug("IDM_GAME_CUSTOM");
-                    break;
-                }
-
-                case IDM_GAME_MARKS: {
-                    logger->debug("IDM_GAME_MARKS");
-                    break;
-                }
-
-                case IDM_GAME_COLOR: {
-                    logger->debug("IDM_GAME_COLOR");
-                    break;
-                }
-
-                case IDM_GAME_SOUND: {
-                    logger->debug("IDM_GAME_SOUND");
-                    break;
-                }
-
-                case IDM_GAME_BEST_TIMES: {
-                    logger->debug("IDM_GAME_BEST_TIMES");
-                    break;
-                }
-
-                case IDM_GAME_EXIT: {
-                    logger->debug("IDM_GAME_EXIT");
-                    SendMessage(windowHandle, WM_CLOSE, 0, 0);
-                    break;
-                }
-
-                case IDM_HELP_GITHUB: {
-                    logger->debug("IDM_HELP_GITHUB");
-                    ShellExecute(nullptr, L"open", githubUrl, nullptr, nullptr, SW_SHOWNORMAL);
-                    break;
-                }
-
-                case IDM_HELP_REPORT_ISSUE: {
-                    logger->debug("IDM_HELP_REPORT_ISSUE");
-                    ShellExecute(nullptr, L"open", githubIssuesUrl, nullptr, nullptr, SW_SHOWNORMAL);
-                    break;
-                }
-
-                case IDM_HELP_ABOUT: {
-                    logger->debug("IDM_HELP_ABOUT");
-                    break;
-                }
-
-                case IDM_DEBUG_SHOW_MINES: {
-                    logger->debug("IDM_DEBUG_SHOW_MINES");
-                    game->showMines();
-                    break;
-                }
-
-                case IDM_DEBUG_SHOW_COUNTS: {
-                    logger->debug("IDM_DEBUG_SHOW_COUNTS");
-                    game->showCounts();
-                    break;
-                }
-
-                case IDM_DEBUG_REVEAL_ALL: {
-                    logger->debug("IDM_DEBUG_REVEAL_ALL");
-                    game->revealAll();
-                    break;
-                }
-
-                default: {
-                    return DefWindowProc(windowHandle, message, wordParam, longParam);
-                }
-            }
-
-            break;
-        }
-
-        case WM_CLOSE: {
-            DestroyWindow(windowHandle);
-            break;
-        }
-
-        case WM_DESTROY: {
-            PostQuitMessage(0);
-            break;
-        }
-
-        default: {
-            return DefWindowProc(windowHandle, message, wordParam, longParam);
+        if (width != backBufferWidth){
+            SDL_Log("This is a high DPI environment.");
         }
     }
 
-    return 0;
+    *appstate = new AppContext{
+       .window = window,
+       .renderer = renderer,
+    };
+
+    SDL_SetRenderVSync(renderer, 1);
+
+    SDL_Log("Application started successfully!");
+
+    return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
+    auto* app = static_cast<AppContext *>(appstate);
+
+    if (event->type == SDL_EVENT_QUIT) {
+        app->app_quit = SDL_APP_SUCCESS;
+    }
+
+    switch (event->type) {
+        case SDL_EVENT_MOUSE_BUTTON_DOWN: game->handleClick(event->button);
+        default: break;
+    }
+
+    return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppIterate(void *appstate) {
+    const auto* app = static_cast<AppContext *>(appstate);
+
+    SetRenderDrawColor(app->renderer, WHITE);
+    SDL_RenderClear(app->renderer);
+
+    int32_t windowWidth;
+    int32_t windowHeight;
+
+    SDL_GetWindowSize(app->window, &windowWidth, &windowHeight);
+
+    game->draw(app->renderer, windowWidth, windowHeight);
+
+    SDL_RenderPresent(app->renderer);
+
+    return app->app_quit;
+}
+
+void SDL_AppQuit(void* appstate, SDL_AppResult result) {
+    if (const auto* app = static_cast<AppContext *>(appstate)) {
+        SDL_DestroyRenderer(app->renderer);
+        SDL_DestroyWindow(app->window);
+
+        delete app;
+    }
+
+    if (game) {
+        game.reset();
+    }
+
+    TTF_Quit();
+    SDL_Log("Application quit successfully!");
+    SDL_Quit();
+}
+
+int SDL_main(const int argc, char **argv) {
+    return SDL_EnterAppMainCallbacks(argc, argv, SDL_AppInit, SDL_AppIterate, SDL_AppEvent, SDL_AppQuit);
 }

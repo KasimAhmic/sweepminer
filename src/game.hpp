@@ -1,11 +1,15 @@
 #pragma once
 
-#include <chrono>
+#include <memory>
+#include <vector>
+
+#include "SDL3/SDL.h"
 
 #include "cell.hpp"
+#include "resource_context.hpp"
 #include "timer.hpp"
 
-enum Difficulty {
+enum class Difficulty {
     BEGINNER,
     INTERMEDIATE,
     EXPERT,
@@ -13,30 +17,38 @@ enum Difficulty {
 
 class Game {
 public:
-    Game(HINSTANCE instanceHandle, HWND windowHandle);
+    Game();
     ~Game() = default;
 
-    RECT start(int32_t width, int32_t height, int32_t mines);
-    RECT start(Difficulty difficulty);
+    SDL_Rect newGame(uint8_t columns, uint8_t rows, uint16_t mines);
+    SDL_Rect newGame(Difficulty difficulty);
+
+    void loadResources(SDL_Renderer* renderer) const;
+    void draw(SDL_Renderer *renderer, int32_t windowWidth, int32_t windowHeight) const;
+    void start() const;
     void end() const;
     void tick();
-    void revealConnectedEmptyCells(int32_t selectedCellX, int32_t selectedCellY) const;
+    void revealConnectedCells(uint16_t x, uint16_t y) const;
+    void handleClick(const SDL_MouseButtonEvent &button) const;
 
-    void showMines() const;
-    void showCounts() const;
-    void revealAll() const;
+    [[nodiscard]] uint8_t getColumns() const { return columns; }
+    [[nodiscard]] uint8_t getRows() const { return rows; }
+    [[nodiscard]] uint16_t getMines() const { return mines; }
+    [[nodiscard]] uint16_t getFlags() const { return flags; }
+    [[nodiscard]] bool isRunning() const { return running; }
+    [[nodiscard]] uint64_t getClock() const { return clock; }
 
 private:
-    HINSTANCE instanceHandle;
-    HWND windowHandle;
-    int32_t columnCount;
-    int32_t rowCount;
-    int32_t mineCount;
-    int32_t flagCount;
-    int32_t clock;
+    uint8_t columns;
+    uint8_t rows;
+    uint16_t mines;
+    uint16_t flags;
+    bool running;
+    uint64_t clock;
     std::vector<std::vector<std::unique_ptr<Cell>>> cells;
     std::unique_ptr<Timer> timer;
     std::shared_ptr<ResourceContext> resourceContext;
 
-    [[nodiscard]] ResourceContext LoadResources() const;
+    void createCellCountFont() const;
+    void createCellCountTextures(SDL_Renderer* renderer) const;
 };
