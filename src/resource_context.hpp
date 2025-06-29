@@ -31,14 +31,7 @@ enum class Font {
 };
 
 enum class Texture {
-    MINE_ONE,
-    MINE_TWO,
-    MINE_THREE,
-    MINE_FOUR,
-    MINE_FIVE,
-    MINE_SIX,
-    MINE_SEVEN,
-    MINE_EIGHT,
+    CELL,
 };
 
 class ResourceContext {

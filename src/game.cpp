@@ -1,13 +1,13 @@
 #include <random>
 #include <unordered_set>
-
-#include "game.hpp"
-
 #include <queue>
 
+#include "SDL3_ttf/SDL_ttf.h"
+#include "SDL3_image/SDL_image.h"
+
+#include "game.hpp"
 #include "art.hpp"
 #include "pair_hash.hpp"
-#include "SDL3_ttf/SDL_ttf.h"
 
 constexpr uint8_t SPACING = 6 * SCALE;
 constexpr uint8_t SCOREBOARD_OFFSET = 9 * SCALE;
@@ -43,16 +43,16 @@ constexpr std::array FOUR_DIR_CELL_OFFSETS = {
     EAST,
 };
 
-constexpr std::array CELL_COLORS = {
-    std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_ONE, "1", SDL_Color(0, 0, 255, 255)),
-    std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_TWO, "2", SDL_Color(0, 128, 0, 255)),
-    std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_THREE, "3", SDL_Color(255, 0, 0, 255)),
-    std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_FOUR, "4", SDL_Color(0, 0, 128, 255)),
-    std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_FIVE, "5", SDL_Color(128, 0, 0, 255)),
-    std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_SIX, "6", SDL_Color(0, 128, 128, 255)),
-    std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_SEVEN, "7", SDL_Color(0, 0, 0, 255)),
-    std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_EIGHT, "8", SDL_Color(128, 128, 128, 255))
-};
+// constexpr std::array CELL_COLORS = {
+//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_ONE, "1", SDL_Color(0, 0, 255, 255)),
+//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_TWO, "2", SDL_Color(0, 128, 0, 255)),
+//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_THREE, "3", SDL_Color(255, 0, 0, 255)),
+//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_FOUR, "4", SDL_Color(0, 0, 128, 255)),
+//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_FIVE, "5", SDL_Color(128, 0, 0, 255)),
+//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_SIX, "6", SDL_Color(0, 128, 128, 255)),
+//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_SEVEN, "7", SDL_Color(0, 0, 0, 255)),
+//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_EIGHT, "8", SDL_Color(128, 128, 128, 255))
+// };
 
 Game::Game(const float scale) {
     this->columns = 0;
@@ -258,13 +258,14 @@ void Game::handleClick(const SDL_MouseButtonEvent &button) const {
 
 void Game::loadResources(SDL_Renderer* renderer) const {
     this->createCellCountFont();
-    this->createCellCountTextures(renderer);
+    // this->createCellCountTextures(renderer);
+    this->createCellCountTexture(renderer);
 }
 
 void Game::createCellCountFont() const {
     const std::string fontPath = "assets/fonts/PublicPixel.ttf";
 
-    TTF_Font *font = TTF_OpenFont(fontPath.c_str(), 1);
+    TTF_Font *font = TTF_OpenFont(fontPath.c_str(), 16);
 
     if (!font) {
         SDL_Log("Failed to load font %s: %s\n", fontPath.c_str(), SDL_GetError());
@@ -274,16 +275,30 @@ void Game::createCellCountFont() const {
     this->resourceContext->add(Font::NUMBER, font);
 }
 
-void Game::createCellCountTextures(SDL_Renderer* renderer) const {
-    for (const auto [name, text, color] : CELL_COLORS) {
-        SDL_Surface* surface = TTF_RenderText_Solid(
-            this->resourceContext->get(Font::NUMBER),
-            text.data(),
-            text.length(),
-            color);
+// void Game::createCellCountTextures(SDL_Renderer* renderer) const {
+//     for (const auto [name, text, color] : CELL_COLORS) {
+//         SDL_Surface* surface = TTF_RenderText_Solid(
+//             this->resourceContext->get(Font::NUMBER),
+//             text.data(),
+//             text.length(),
+//             color);
+//
+//         this->resourceContext->add(name, SDL_CreateTextureFromSurface(renderer, surface));
+//
+//         SDL_DestroySurface(surface);
+//     }
+// }
 
-        this->resourceContext->add(name, SDL_CreateTextureFromSurface(renderer, surface));
+void Game::createCellCountTexture(SDL_Renderer* renderer) const {
+    const std::string texturePath = "assets/images/cell.png";
+    SDL_Texture* texture = IMG_LoadTexture(renderer, texturePath.c_str());
 
-        SDL_DestroySurface(surface);
+    if (!texture) {
+        SDL_Log("Failed to load texture %s: %s\n", texturePath.c_str(), SDL_GetError());
+        return;
     }
+
+    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+
+    this->resourceContext->add(Texture::CELL, texture);
 }

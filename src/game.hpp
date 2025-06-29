@@ -54,4 +54,5 @@ private:
 
     void createCellCountFont() const;
     void createCellCountTextures(SDL_Renderer* renderer) const;
+    void createCellCountTexture(SDL_Renderer* renderer) const;
 };
