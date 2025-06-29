@@ -56,7 +56,8 @@ set(SDL_MAIN_CALLBACK_STANDARD 1)
 add_executable(${PROJECT_NAME} src/main.cpp
         src/game.cpp
         src/cell.cpp
-        src/timer.cpp)
+        src/timer.cpp
+        src/mouse.cpp)
 
 file(COPY assets DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 

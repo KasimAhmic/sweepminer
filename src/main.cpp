@@ -9,6 +9,7 @@
 #include "art.hpp"
 #include "color.hpp"
 #include "game.hpp"
+#include "mouse.hpp"
 
 std::unique_ptr<Game> game;
 
@@ -112,7 +113,27 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
     }
 
     switch (event->type) {
-        case SDL_EVENT_MOUSE_BUTTON_DOWN: game->handleClick(event->button);
+        case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+            Mouse::setState(MouseState::DOWN);
+            game->handleMouseEvent();
+            break;
+        }
+
+        case SDL_EVENT_MOUSE_BUTTON_UP: {
+            Mouse::setState(MouseState::UP);
+            break;
+        }
+
+        case SDL_EVENT_MOUSE_MOTION: {
+            Mouse::setPosition(static_cast<int32_t>(event->motion.x), static_cast<int32_t>(event->motion.y));
+            break;
+        }
+
+        case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
+            Mouse::setPosition(0, 0);
+            break;
+        }
+
         default: break;
     }
 

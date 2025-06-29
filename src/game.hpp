@@ -29,7 +29,7 @@ public:
     void end() const;
     void tick();
     void revealConnectedCells(uint16_t x, uint16_t y) const;
-    void handleClick(const SDL_MouseButtonEvent &button) const;
+    void handleMouseEvent() const;
 
     void setScale(const float scale) { this->scale = scale; }
 
@@ -53,6 +53,5 @@ private:
     float scale;
 
     void createCellCountFont() const;
-    void createCellCountTextures(SDL_Renderer* renderer) const;
     void createCellCountTexture(SDL_Renderer* renderer) const;
 };
