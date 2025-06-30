@@ -29,8 +29,8 @@ void Cell::draw(SDL_Renderer *renderer) const {
     const SDL_FRect dest{
         .x = static_cast<float>(this->xPosition),
         .y = static_cast<float>(this->yPosition),
-        .w = Scaler::scaled(16),
-        .h = Scaler::scaled(16)
+        .w = Scaler::scaled(CELL_SIZE),
+        .h = Scaler::scaled(CELL_SIZE)
     };
 
     if (this->state == State::HIDDEN) {

@@ -47,7 +47,7 @@ Game::Game() {
     this->resourceContext = std::make_shared<ResourceContext>();
 }
 
-SDL_Rect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t mines) {
+SDL_FRect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t mines) {
     this->columns = std::min(columns, MAX_COLUMNS);
     this->rows = std::min(rows, MAX_ROWS);
     this->mines = std::min(mines, MAX_MINES);
@@ -111,12 +111,12 @@ SDL_Rect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t
     return {
         0,
         0,
-        Scaler::scaled(columns * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SPACING * 2),
-        Scaler::scaled(rows * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SCOREBOARD_HEIGHT + SPACING * 3)
+        static_cast<float>(columns * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SPACING * 2),
+        static_cast<float>(rows * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SCOREBOARD_HEIGHT + SPACING * 3)
     };
 }
 
-SDL_Rect Game::newGame(const Difficulty difficulty) {
+SDL_FRect Game::newGame(const Difficulty difficulty) {
     switch (difficulty) {
         case Difficulty::BEGINNER:
             return this->newGame(9, 9, 10);

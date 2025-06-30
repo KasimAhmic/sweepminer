@@ -57,9 +57,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
     game = std::make_unique<Game>();
 
-    const SDL_Rect gameSize = game->newGame(Difficulty::BEGINNER);
+    const SDL_FRect gameSize = game->newGame(Difficulty::BEGINNER);
 
-    SDL_SetWindowSize(window, gameSize.w, gameSize.h);
+    SDL_SetWindowSize(window, gameSize.w * Scaler::getUserScale(), gameSize.h * Scaler::getUserScale());
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {

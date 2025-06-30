@@ -20,8 +20,8 @@ public:
     Game();
     ~Game() = default;
 
-    SDL_Rect newGame(uint8_t columns, uint8_t rows, uint16_t mines);
-    SDL_Rect newGame(Difficulty difficulty);
+    SDL_FRect newGame(uint8_t columns, uint8_t rows, uint16_t mines);
+    SDL_FRect newGame(Difficulty difficulty);
 
     void loadResources(SDL_Renderer* renderer) const;
     void draw(SDL_Renderer *renderer, int32_t windowWidth, int32_t windowHeight) const;

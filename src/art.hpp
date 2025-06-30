@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SDL3/SDL.h"
+
 #include "color.hpp"
 
 inline void SetRenderDrawColor(SDL_Renderer* renderer, const Color& color) {
