@@ -12,6 +12,8 @@
 #include "mouse.hpp"
 #include "scaler.hpp"
 
+#define UNUSED(x) (void)(x)
+
 std::unique_ptr<Game> game;
 
 constexpr Color WHITE(255, 255, 255, 255);
@@ -29,6 +31,9 @@ SDL_AppResult SDL_Fail(){
 }
 
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
+    UNUSED(argc);
+    UNUSED(argv);
+
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC)) {
         SDL_Log("Couldn't initialize SDL: %s\n", SDL_GetError());
         return SDL_Fail();
@@ -59,7 +64,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
     const SDL_FRect gameSize = game->newGame(Difficulty::BEGINNER);
 
-    SDL_SetWindowSize(window, gameSize.w * Scaler::getUserScale(), gameSize.h * Scaler::getUserScale());
+    SDL_SetWindowSize(window,
+        static_cast<int32_t>(gameSize.w) * Scaler::getUserScale(),
+        static_cast<int32_t>(gameSize.h) * Scaler::getUserScale());
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
@@ -118,6 +125,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
 
     switch (event->type) {
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+            Mouse::setButton(event->button.button);
             Mouse::setEvent(MouseEvent::BUTTON_DOWN);
             Mouse::setState(MouseState::DOWN);
             game->handleMouseEvent();
@@ -125,6 +133,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
         }
 
         case SDL_EVENT_MOUSE_BUTTON_UP: {
+            Mouse::setButton(event->button.button);
             Mouse::setEvent(MouseEvent::BUTTON_UP);
             Mouse::setState(MouseState::UP);
             game->handleMouseEvent();

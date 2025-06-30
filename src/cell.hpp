@@ -13,8 +13,8 @@ constexpr Color BORDER_HIGHLIGHT_COLOR(255, 255, 255, 255);
 constexpr Color BORDER_SHADOW_COLOR(128, 128, 128, 255);
 
 namespace TextureOffset {
-    constexpr SDL_FRect NONE =           { 00, 00, 00, 16 };
-    constexpr SDL_FRect FLAG =           { 16, 00, 00, 16 };
+    constexpr SDL_FRect NONE =           { 00, 00, 16, 16 };
+    constexpr SDL_FRect FLAG =           { 16, 00, 16, 16 };
     constexpr SDL_FRect QUESTION_MARK =  { 32, 00, 16, 16 };
 
     constexpr SDL_FRect MINE =           { 00, 16, 16, 16 };
@@ -33,7 +33,6 @@ namespace TextureOffset {
 
 enum class State {
     HIDDEN,
-    HOVERED,
     FLAGGED,
     QUESTIONED,
     REVEALED,

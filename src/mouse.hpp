@@ -20,6 +20,11 @@ enum class MouseEvent {
     LEAVE,
 };
 
+enum class MouseButton {
+    LEFT,
+    RIGHT,
+};
+
 class Mouse {
 public:
     [[nodiscard]] static std::pair<int32_t, int32_t> getPosition() { return Mouse::position; }
@@ -30,6 +35,16 @@ public:
 
     [[nodiscard]] static MouseEvent getEvent() { return Mouse::event; }
     static void setEvent(const MouseEvent newEvent) { Mouse::event = newEvent; }
+
+    [[nodiscard]] static MouseButton getButton() { return Mouse::button; }
+    static void setButton(const MouseButton newButton) { Mouse::button = newButton; }
+    static void setButton(const uint8_t newButton) {
+        if (newButton == SDL_BUTTON_LEFT) {
+            Mouse::button = MouseButton::LEFT;
+        } else if (newButton == SDL_BUTTON_RIGHT) {
+            Mouse::button = MouseButton::RIGHT;
+        }
+    }
 
     static std::optional<std::pair<int32_t, int32_t>> getCellOffsets() {
         const auto [mouseX, mouseY] = Mouse::getPosition();
@@ -62,4 +77,9 @@ private:
      * The last mouse event that occurred.
      */
     static MouseEvent event;
+
+    /**
+     * The mouse button that was pressed or released.
+     */
+    static MouseButton button;
 };

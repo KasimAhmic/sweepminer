@@ -238,8 +238,13 @@ void Game::handleMouseEvent() const {
 
     const std::unique_ptr<Cell> &cell = this->cells[row][column];
 
-    if (Mouse::getState() == MouseState::UP && Mouse::getEvent() == MouseEvent::BUTTON_UP) {
+    if (Mouse::getEvent() == MouseEvent::BUTTON_UP && Mouse::getButton() == MouseButton::LEFT) {
         cell->reveal();
+        return;
+    }
+
+    if (Mouse::getEvent() == MouseEvent::BUTTON_DOWN && Mouse::getButton() == MouseButton::RIGHT) {
+        cell->mark();
     }
 }
 
