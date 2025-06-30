@@ -1,6 +1,6 @@
 # SweepMiner
 
-SweepMiner is a Minesweeper clone I'm working on to learn C++ and SDL3.j
+SweepMiner is a Minesweeper clone I'm working on to learn C++ and SDL3.
 
 ## Building
 
