@@ -1,6 +1,5 @@
 #include "cell.hpp"
-
-#include "art.hpp"
+#include "util.hpp"
 #include "game.hpp"
 #include "constants.hpp"
 #include "mouse.hpp"
@@ -149,14 +148,14 @@ void Cell::drawGrid(SDL_Renderer *renderer) const {
 
         SDL_RenderLine(renderer,
             this->xPosition,
-            this->yPosition + offset,
-            this->xPosition + Scaler::scaled(CELL_SIZE) - 1,
-            this->yPosition + offset);
+            static_cast<float>(this->yPosition) + offset,
+            static_cast<float>(this->xPosition) + Scaler::scaled(CELL_SIZE) - 1,
+            static_cast<float>(this->yPosition) + offset);
 
         SDL_RenderLine(renderer,
-            this->xPosition + offset,
+            static_cast<float>(this->xPosition) + offset,
             this->yPosition,
-            this->xPosition + offset,
-            this->yPosition + Scaler::scaled(CELL_SIZE) - 1);
+            static_cast<float>(this->xPosition) + offset,
+            static_cast<float>(this->yPosition) + Scaler::scaled(CELL_SIZE) - 1);
     }
 }

@@ -19,7 +19,7 @@ public:
     [[nodiscard]] static int32_t getDeviceScale() { return Scaler::deviceScale; }
     static void setDeviceScale(const int32_t value) { Scaler::deviceScale = value; }
 
-    [[nodiscard]] static int32_t getTotalScale() { return Scaler::userScale * Scaler::deviceScale; }
+    [[nodiscard]] static int32_t getTotalScale();
 
 private:
     static int32_t userScale;

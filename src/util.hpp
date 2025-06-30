@@ -1,72 +1,82 @@
 #pragma once
 
-#include <string>
-#include <memory>
+#include "SDL3/SDL.h"
 
-#include "SweepMiner/framework.hpp"
+#include "color.hpp"
 
-#define RECT_WIDTH(rect) (rect.right - rect.left)
-#define RECT_HEIGHT(rect) (rect.bottom - rect.top)
+inline void SetRenderDrawColor(SDL_Renderer* renderer, const Color& color) {
 
-constexpr int32_t ERROR_BUFFER_SIZE = 256;
-
-inline std::string DecodeError(DWORD errorCode) {
-    const auto outputBuffer = std::make_unique<wchar_t[]>(ERROR_BUFFER_SIZE);
-
-    FormatMessage(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
-        nullptr,
-        errorCode,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        outputBuffer.get(),
-        ERROR_BUFFER_SIZE,
-        nullptr);
-
-    return {outputBuffer.get(), outputBuffer.get() + wcslen(outputBuffer.get())};
+    SDL_SetRenderDrawColor(renderer, color.asInt().r, color.asInt().g, color.asInt().b, color.asInt().a);
 }
 
-inline HWND GetClickedControl(HWND parentHandle, const LPARAM longParam) {
-    POINT clickLocation = {LOWORD(longParam), HIWORD(longParam)};
-    ScreenToClient(parentHandle, &clickLocation);
+inline void DrawBox(
+    SDL_Renderer *renderer,
+    const float x,
+    const float y,
+    const float width,
+    const float height,
+    const float borderWidth,
+    const Color &backgroundColor,
+    const Color &topLeftBorderColor,
+    const Color &bottomRightBorderColor) {
 
-    return ChildWindowFromPoint(parentHandle, clickLocation);
-}
-
-inline std::shared_ptr<HBRUSH> MakeSolidBrush(COLORREF color) {
-    return {
-        new HBRUSH(CreateSolidBrush(color)),
-        [](HBRUSH *brush) {
-            if (brush) {
-                DeleteObject(brush);
-            }
-        }
+    const SDL_Vertex topLeftBorders[3] = {
+        SDL_Vertex{ SDL_FPoint{ .x = x, .y = y }, topLeftBorderColor.asFloat()},
+        SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height }, topLeftBorderColor.asFloat() },
+        SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y }, topLeftBorderColor.asFloat() },
     };
-}
 
-inline std::shared_ptr<HFONT> MakeFont(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight,
-                                       DWORD bItalic, DWORD bUnderline, DWORD bStrikeOut, DWORD iCharSet,
-                                       DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality,
-                                       DWORD iPitchAndFamily, LPCWSTR pszFaceName) {
-    return {
-        new HFONT(CreateFont(
-            cHeight,
-            cWidth,
-            cEscapement,
-            cOrientation,
-            cWeight,
-            bItalic,
-            bUnderline,
-            bStrikeOut,
-            iCharSet,
-            iOutPrecision,
-            iClipPrecision,
-            iQuality,
-            iPitchAndFamily,
-            pszFaceName)),
-        [](HFONT *font) {
-            if (font) {
-                DeleteObject(font);
-            }
-        }
+    const SDL_Vertex bottomRightBorders[3] = {
+        SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y + height }, bottomRightBorderColor.asFloat() },
+        SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y }, bottomRightBorderColor.asFloat() },
+        SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height }, bottomRightBorderColor.asFloat() }
     };
+
+    SDL_RenderGeometry(renderer, nullptr, topLeftBorders, 3, nullptr, 0);
+    SDL_RenderGeometry(renderer, nullptr, bottomRightBorders, 3, nullptr, 0);
+
+    if (width > height) {
+        const SDL_Vertex bottomLeftTriangle[3] = {
+            SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height }, bottomRightBorderColor.asFloat() },
+            SDL_Vertex{ SDL_FPoint{ .x = x + height - borderWidth, .y = y + height }, bottomRightBorderColor.asFloat() },
+            SDL_Vertex{ SDL_FPoint{ .x = x + height - borderWidth, .y = y + borderWidth }, bottomRightBorderColor.asFloat() }
+        };
+
+        const SDL_Vertex topRightTriangle[3] = {
+            SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y }, topLeftBorderColor.asFloat() },
+            SDL_Vertex{ SDL_FPoint{ .x = x + width - height + borderWidth, .y = y }, topLeftBorderColor.asFloat() },
+            SDL_Vertex{ SDL_FPoint{ .x = x + width - height + borderWidth, .y = y + height - borderWidth }, topLeftBorderColor.asFloat() }
+        };
+
+        SDL_RenderGeometry(renderer, nullptr, topRightTriangle, 3, nullptr, 0);
+        SDL_RenderGeometry(renderer, nullptr, bottomLeftTriangle, 3, nullptr, 0);
+    }
+
+    if (height > width) {
+        const SDL_Vertex topRightTriangle[3] = {
+            SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y + width - borderWidth }, bottomRightBorderColor.asFloat() },
+            SDL_Vertex{ SDL_FPoint{ .x = x + borderWidth, .y = y + width - borderWidth }, bottomRightBorderColor.asFloat() },
+            SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y }, bottomRightBorderColor.asFloat() }
+        };
+
+        const SDL_Vertex bottomLeftTriangle[3] = {
+            SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height - width + borderWidth }, topLeftBorderColor.asFloat() },
+            SDL_Vertex{ SDL_FPoint{ .x = x + width - borderWidth, .y = y + height - width + borderWidth }, topLeftBorderColor.asFloat() },
+            SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height }, topLeftBorderColor.asFloat() }
+        };
+
+        SDL_RenderGeometry(renderer, nullptr, topRightTriangle, 3, nullptr, 0);
+        SDL_RenderGeometry(renderer, nullptr, bottomLeftTriangle, 3, nullptr, 0);
+    }
+
+    SDL_SetRenderDrawColor(renderer, backgroundColor.asInt().r, backgroundColor.asInt().g, backgroundColor.asInt().b, backgroundColor.asInt().a);
+
+    const SDL_FRect cell = {
+        x + borderWidth,
+        y + borderWidth,
+        width - borderWidth * 2,
+        height - borderWidth * 2
+    };
+
+    SDL_RenderFillRect(renderer, &cell);
 }

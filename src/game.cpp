@@ -5,7 +5,7 @@
 #include "SDL3_image/SDL_image.h"
 
 #include "game.hpp"
-#include "art.hpp"
+#include "util.hpp"
 #include "mouse.hpp"
 #include "pair_hash.hpp"
 #include "constants.hpp"

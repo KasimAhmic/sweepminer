@@ -1,12 +1,13 @@
 #define SDL_MAIN_USE_CALLBACKS 1
 
+#include <filesystem>
+
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include <filesystem>
 
-#include "art.hpp"
+#include "util.hpp"
 #include "color.hpp"
 #include "game.hpp"
 #include "mouse.hpp"
@@ -30,7 +31,7 @@ SDL_AppResult SDL_Fail(){
     return SDL_APP_FAILURE;
 }
 
-SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
+SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     UNUSED(argc);
     UNUSED(argv);
 
@@ -54,7 +55,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
     }
 
     Scaler::setUserScale(2.0f);
-    Scaler::setDeviceScale(SDL_GetWindowDisplayScale(window));
+    Scaler::setDeviceScale(static_cast<int32_t>(SDL_GetWindowDisplayScale(window)));
 
     if (game) {
         game.reset();
@@ -185,7 +186,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     return app->app_quit;
 }
 
-void SDL_AppQuit(void* appstate, SDL_AppResult result) {
+void SDL_AppQuit(void* appstate, const SDL_AppResult result) {
+    UNUSED(result);
+
     if (const auto* app = static_cast<AppContext *>(appstate)) {
         SDL_DestroyRenderer(app->renderer);
         SDL_DestroyWindow(app->window);
