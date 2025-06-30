@@ -2,6 +2,9 @@
 
 #include "art.hpp"
 #include "game.hpp"
+#include "constants.hpp"
+#include "mouse.hpp"
+#include "scaler.hpp"
 
 Cell::Cell(Game& game,
            const uint16_t id,
@@ -10,8 +13,7 @@ Cell::Cell(Game& game,
            const uint8_t column,
            const uint8_t row,
            const bool containsMine,
-           const std::shared_ptr<ResourceContext> &resourceContext,
-           const float scale)
+           const std::shared_ptr<ResourceContext> &resourceContext)
     : game(game),
       id(id),
       xPosition(xPosition),
@@ -21,25 +23,35 @@ Cell::Cell(Game& game,
       state(State::HIDDEN),
       surroundingMines(0),
       containsMine(containsMine),
-      resourceContext(resourceContext),
-      scale(scale) {}
+      resourceContext(resourceContext) {}
 
 void Cell::draw(SDL_Renderer *renderer) const {
     const SDL_FRect dest{
-        .x = static_cast<float>(this->xPosition) * this->scale,
-        .y = static_cast<float>(this->yPosition) * this->scale,
-        .w = 16 * SCALE * this->scale,
-        .h = 16 * SCALE * this->scale
+        .x = static_cast<float>(this->xPosition),
+        .y = static_cast<float>(this->yPosition),
+        .w = Scaler::scaled(16),
+        .h = Scaler::scaled(16)
     };
 
     if (this->state == State::HIDDEN) {
-        return DrawBox(
-            renderer,
+        int32_t x = -1;
+        int32_t y = -1;
+
+        if (const auto offsets = Mouse::getCellOffsets(); offsets.has_value()) {
+            std::tie(x, y) = *offsets;
+        }
+
+        if (x == this->column && y == this->row && Mouse::getState() == MouseState::DOWN) {
+            this->drawGrid(renderer);
+            return;
+        }
+
+        return DrawBox(renderer,
             dest.x,
             dest.y,
-            CELL_SIZE * this->scale,
-            CELL_SIZE * this->scale,
-            MEDIUM_BORDER_WIDTH * this->scale,
+            Scaler::scaled(CELL_SIZE),
+            Scaler::scaled(CELL_SIZE),
+            Scaler::scaled(MEDIUM_BORDER_WIDTH),
             BACKGROUND_COLOR,
             BORDER_HIGHLIGHT_COLOR,
             BORDER_SHADOW_COLOR);
@@ -53,21 +65,7 @@ void Cell::draw(SDL_Renderer *renderer) const {
     }
 
     if (this->state == State::REVEALED) {
-        SetRenderDrawColor(renderer, BORDER_SHADOW_COLOR);
-
-        for (uint8_t i = 0; i < SCALE * this->scale; i++) {
-            SDL_RenderLine(renderer,
-                        this->xPosition * this->scale,
-                        this->yPosition * this->scale + i,
-                        (this->xPosition + CELL_SIZE) * this->scale - 1,
-                        this->yPosition * this->scale + i);
-
-            SDL_RenderLine(renderer,
-                        this->xPosition * this->scale + i,
-                        this->yPosition * this->scale,
-                        this->xPosition * this->scale + i,
-                        (this->yPosition + CELL_SIZE) * this->scale - 1);
-        }
+        this->drawGrid(renderer);
 
         if (this->hasMine()) {
             SDL_RenderTexture(renderer, texture, &TextureOffset::MINE_DETONATED, &dest);
@@ -107,4 +105,24 @@ void Cell::reveal() {
 
 void Cell::revealCell() {
     this->state = State::REVEALED;
+}
+
+void Cell::drawGrid(SDL_Renderer *renderer) const {
+    SetRenderDrawColor(renderer, BORDER_SHADOW_COLOR);
+
+    for (int32_t i = 0; i < Scaler::getTotalScale(); i++) {
+        const auto offset = static_cast<float>(i);
+
+        SDL_RenderLine(renderer,
+            this->xPosition,
+            this->yPosition + offset,
+            this->xPosition + Scaler::scaled(CELL_SIZE) - 1,
+            this->yPosition + offset);
+
+        SDL_RenderLine(renderer,
+            this->xPosition + offset,
+            this->yPosition,
+            this->xPosition + offset,
+            this->yPosition + Scaler::scaled(CELL_SIZE) - 1);
+    }
 }

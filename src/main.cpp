@@ -10,6 +10,7 @@
 #include "color.hpp"
 #include "game.hpp"
 #include "mouse.hpp"
+#include "scaler.hpp"
 
 std::unique_ptr<Game> game;
 
@@ -47,11 +48,14 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
         return SDL_Fail();
     }
 
+    Scaler::setUserScale(2.0f);
+    Scaler::setDeviceScale(SDL_GetWindowDisplayScale(window));
+
     if (game) {
         game.reset();
     }
 
-    game = std::make_unique<Game>(SDL_GetWindowDisplayScale(window));
+    game = std::make_unique<Game>();
 
     const SDL_Rect gameSize = game->newGame(Difficulty::BEGINNER);
 
@@ -114,27 +118,41 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
 
     switch (event->type) {
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+            Mouse::setEvent(MouseEvent::BUTTON_DOWN);
             Mouse::setState(MouseState::DOWN);
             game->handleMouseEvent();
             break;
         }
 
         case SDL_EVENT_MOUSE_BUTTON_UP: {
+            Mouse::setEvent(MouseEvent::BUTTON_UP);
             Mouse::setState(MouseState::UP);
+            game->handleMouseEvent();
             break;
         }
 
         case SDL_EVENT_MOUSE_MOTION: {
+            Mouse::setEvent(MouseEvent::MOVE);
             Mouse::setPosition(static_cast<int32_t>(event->motion.x), static_cast<int32_t>(event->motion.y));
+            game->handleMouseEvent();
+            break;
+        }
+
+        case SDL_EVENT_WINDOW_MOUSE_ENTER: {
+            Mouse::setEvent(MouseEvent::ENTER);
+            game->handleMouseEvent();
             break;
         }
 
         case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
-            Mouse::setPosition(0, 0);
+            Mouse::setEvent(MouseEvent::LEAVE);
+            game->handleMouseEvent();
             break;
         }
 
-        default: break;
+        default: {
+            break;
+        }
     }
 
     return SDL_APP_CONTINUE;

@@ -17,7 +17,7 @@ enum class Difficulty {
 
 class Game {
 public:
-    explicit Game(float scale);
+    Game();
     ~Game() = default;
 
     SDL_Rect newGame(uint8_t columns, uint8_t rows, uint16_t mines);
@@ -30,8 +30,6 @@ public:
     void tick();
     void revealConnectedCells(uint16_t x, uint16_t y) const;
     void handleMouseEvent() const;
-
-    void setScale(const float scale) { this->scale = scale; }
 
     [[nodiscard]] uint8_t getColumns() const { return columns; }
     [[nodiscard]] uint8_t getRows() const { return rows; }
@@ -50,8 +48,6 @@ private:
     std::vector<std::vector<std::unique_ptr<Cell>>> cells;
     std::unique_ptr<Timer> timer;
     std::shared_ptr<ResourceContext> resourceContext;
-    float scale;
 
-    void createCellCountFont() const;
-    void createCellCountTexture(SDL_Renderer* renderer) const;
+    void loadCellCountTexture(SDL_Renderer* renderer) const;
 };

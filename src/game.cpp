@@ -2,22 +2,14 @@
 #include <unordered_set>
 #include <queue>
 
-#include "SDL3_ttf/SDL_ttf.h"
 #include "SDL3_image/SDL_image.h"
 
 #include "game.hpp"
 #include "art.hpp"
 #include "mouse.hpp"
 #include "pair_hash.hpp"
-
-constexpr uint8_t SPACING = 6 * SCALE;
-constexpr uint8_t SCOREBOARD_OFFSET = 9 * SCALE;
-constexpr uint8_t SCOREBOARD_HEIGHT = 37 * SCALE;
-constexpr uint16_t CELL_GRID_OFFSET_X = 6 * SCALE;
-constexpr uint16_t CELL_GRID_OFFSET_Y = 49 * SCALE;
-constexpr uint8_t MAX_COLUMNS = 30;
-constexpr uint8_t MAX_ROWS = 24;
-constexpr uint16_t MAX_MINES = 667;
+#include "constants.hpp"
+#include "scaler.hpp"
 
 typedef std::pair<int32_t, int32_t> Offset;
 
@@ -44,18 +36,7 @@ constexpr std::array FOUR_DIR_CELL_OFFSETS = {
     EAST,
 };
 
-// constexpr std::array CELL_COLORS = {
-//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_ONE, "1", SDL_Color(0, 0, 255, 255)),
-//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_TWO, "2", SDL_Color(0, 128, 0, 255)),
-//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_THREE, "3", SDL_Color(255, 0, 0, 255)),
-//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_FOUR, "4", SDL_Color(0, 0, 128, 255)),
-//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_FIVE, "5", SDL_Color(128, 0, 0, 255)),
-//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_SIX, "6", SDL_Color(0, 128, 128, 255)),
-//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_SEVEN, "7", SDL_Color(0, 0, 0, 255)),
-//     std::tuple<Texture, std::string_view, SDL_Color>(Texture::MINE_EIGHT, "8", SDL_Color(128, 128, 128, 255))
-// };
-
-Game::Game(const float scale) {
+Game::Game() {
     this->columns = 0;
     this->rows = 0;
     this->mines = 0;
@@ -64,7 +45,6 @@ Game::Game(const float scale) {
     this->clock = 0;
     this->timer = std::make_unique<Timer>([this] { this->tick(); }, 1000);
     this->resourceContext = std::make_shared<ResourceContext>();
-    this->scale = scale;
 }
 
 SDL_Rect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t mines) {
@@ -92,13 +72,12 @@ SDL_Rect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t
             cellRow.emplace_back(std::make_unique<Cell>(
                 *this,
                 id,
-                col * CELL_SIZE + CELL_GRID_OFFSET_X + THICK_BORDER_WIDTH * 2,
-                row * CELL_SIZE + CELL_GRID_OFFSET_Y + THICK_BORDER_WIDTH * 2,
+                Scaler::scaled(col * CELL_SIZE + CELL_GRID_OFFSET_X + THICK_BORDER_WIDTH * 2),
+                Scaler::scaled(row * CELL_SIZE + CELL_GRID_OFFSET_Y + THICK_BORDER_WIDTH * 2),
                 col,
                 row,
                 mineCells.contains(id),
-                this->resourceContext,
-                this->scale));
+                this->resourceContext));
             id++;
         }
 
@@ -132,8 +111,8 @@ SDL_Rect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t
     return {
         0,
         0,
-        columns * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SPACING * 2,
-        rows * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SCOREBOARD_HEIGHT + SPACING * 3
+        Scaler::scaled(columns * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SPACING * 2),
+        Scaler::scaled(rows * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SCOREBOARD_HEIGHT + SPACING * 3)
     };
 }
 
@@ -154,21 +133,21 @@ void Game::draw(SDL_Renderer *renderer, const int32_t windowWidth, const int32_t
     // Draw the window border
     SetRenderDrawColor(renderer, BACKGROUND_COLOR);
     const SDL_FRect rect = {
-        THICK_BORDER_WIDTH * this->scale,
-        THICK_BORDER_WIDTH * this->scale,
-        static_cast<float>(windowWidth) * this->scale,
-        static_cast<float>(windowHeight) * this->scale
+        Scaler::scaled(THICK_BORDER_WIDTH),
+        Scaler::scaled(THICK_BORDER_WIDTH),
+        Scaler::scaled(windowWidth),
+        Scaler::scaled(windowHeight)
     };
     SDL_RenderFillRect(renderer, &rect);
 
     // Draw the scoreboard
     DrawBox(
         renderer,
-        SCOREBOARD_OFFSET * this->scale,
-        SCOREBOARD_OFFSET * this->scale,
-        static_cast<float>(windowWidth - SCOREBOARD_OFFSET * 2 + MEDIUM_BORDER_WIDTH) * this->scale,
-        37.0f * SCALE * this->scale,
-        MEDIUM_BORDER_WIDTH * this->scale,
+        Scaler::scaled(SCOREBOARD_OFFSET),
+        Scaler::scaled(SCOREBOARD_OFFSET),
+        Scaler::scaled(windowWidth - SCOREBOARD_OFFSET * 2 + MEDIUM_BORDER_WIDTH),
+        Scaler::scaled(SCOREBOARD_HEIGHT),
+        Scaler::scaled(MEDIUM_BORDER_WIDTH),
         BACKGROUND_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
@@ -176,11 +155,11 @@ void Game::draw(SDL_Renderer *renderer, const int32_t windowWidth, const int32_t
     // Draw the cell grid border
     DrawBox(
         renderer,
-        (THICK_BORDER_WIDTH + CELL_GRID_OFFSET_X) * this->scale,
-        (THICK_BORDER_WIDTH + CELL_GRID_OFFSET_Y) * this->scale,
-        static_cast<float>(CELL_SIZE * columns + THICK_BORDER_WIDTH * 2) * this->scale,
-        static_cast<float>(CELL_SIZE * rows + THICK_BORDER_WIDTH * 2) * this->scale,
-        THICK_BORDER_WIDTH * this->scale,
+        Scaler::scaled(THICK_BORDER_WIDTH + CELL_GRID_OFFSET_X),
+        Scaler::scaled(THICK_BORDER_WIDTH + CELL_GRID_OFFSET_Y),
+        Scaler::scaled(CELL_SIZE * columns + THICK_BORDER_WIDTH * 2),
+        Scaler::scaled(CELL_SIZE * rows + THICK_BORDER_WIDTH * 2),
+        Scaler::scaled(THICK_BORDER_WIDTH),
         BACKGROUND_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
@@ -245,17 +224,13 @@ void Game::revealConnectedCells(uint16_t x, uint16_t y) const {
 
 
 void Game::handleMouseEvent() const {
-    const auto [mouseX, mouseY] = Mouse::getPosition();
+    const std::optional<std::pair<int32_t, int32_t>> offsets = Mouse::getCellOffsets();
 
-    const int32_t gridX = mouseX - CELL_GRID_OFFSET_X - THICK_BORDER_WIDTH * 2;
-    const int32_t gridY = mouseY - CELL_GRID_OFFSET_Y - THICK_BORDER_WIDTH * 2;
-
-    if (gridX < 0 || gridY < 0) {
+    if (!offsets.has_value()) {
         return;
     }
 
-    const int32_t column = gridX / CELL_SIZE;
-    const int32_t row = gridY / CELL_SIZE;
+    const auto [column, row] = offsets.value();
 
     if (column >= this->columns || row >= this->rows) {
         return;
@@ -263,43 +238,16 @@ void Game::handleMouseEvent() const {
 
     const std::unique_ptr<Cell> &cell = this->cells[row][column];
 
-    cell->reveal();
+    if (Mouse::getState() == MouseState::UP && Mouse::getEvent() == MouseEvent::BUTTON_UP) {
+        cell->reveal();
+    }
 }
 
 void Game::loadResources(SDL_Renderer* renderer) const {
-    this->createCellCountFont();
-    // this->createCellCountTextures(renderer);
-    this->createCellCountTexture(renderer);
+    this->loadCellCountTexture(renderer);
 }
 
-void Game::createCellCountFont() const {
-    const std::string fontPath = "assets/fonts/PublicPixel.ttf";
-
-    TTF_Font *font = TTF_OpenFont(fontPath.c_str(), 16);
-
-    if (!font) {
-        SDL_Log("Failed to load font %s: %s\n", fontPath.c_str(), SDL_GetError());
-        return;
-    }
-
-    this->resourceContext->add(Font::NUMBER, font);
-}
-
-// void Game::createCellCountTextures(SDL_Renderer* renderer) const {
-//     for (const auto [name, text, color] : CELL_COLORS) {
-//         SDL_Surface* surface = TTF_RenderText_Solid(
-//             this->resourceContext->get(Font::NUMBER),
-//             text.data(),
-//             text.length(),
-//             color);
-//
-//         this->resourceContext->add(name, SDL_CreateTextureFromSurface(renderer, surface));
-//
-//         SDL_DestroySurface(surface);
-//     }
-// }
-
-void Game::createCellCountTexture(SDL_Renderer* renderer) const {
+void Game::loadCellCountTexture(SDL_Renderer* renderer) const {
     const std::string texturePath = "assets/images/cell.png";
     SDL_Texture* texture = IMG_LoadTexture(renderer, texturePath.c_str());
 

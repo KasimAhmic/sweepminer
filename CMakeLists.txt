@@ -57,7 +57,8 @@ add_executable(${PROJECT_NAME} src/main.cpp
         src/game.cpp
         src/cell.cpp
         src/timer.cpp
-        src/mouse.cpp)
+        src/mouse.cpp
+        src/scaler.cpp)
 
 file(COPY assets DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 

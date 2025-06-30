@@ -7,34 +7,28 @@
 
 class Game; // Forward declaration
 
-constexpr uint8_t SCALE = 2;
-constexpr uint8_t CELL_SIZE = 16 * SCALE;
-constexpr uint8_t THIN_BORDER_WIDTH = 1 * SCALE;
-constexpr uint8_t MEDIUM_BORDER_WIDTH = 2 * SCALE;
-constexpr uint8_t THICK_BORDER_WIDTH = 3 * SCALE;
-
 constexpr Color BACKGROUND_COLOR(192, 192, 192, 255);
 constexpr Color HOVERED_COLOR(150, 150, 150, 255);
 constexpr Color BORDER_HIGHLIGHT_COLOR(255, 255, 255, 255);
 constexpr Color BORDER_SHADOW_COLOR(128, 128, 128, 255);
 
 namespace TextureOffset {
-    constexpr SDL_FRect NONE = {0, 0, 0, 16};
-    constexpr SDL_FRect FLAG = {16, 0, 0, 16};
-    constexpr SDL_FRect QUESTION_MARK = {32, 0, 16, 16};
+    constexpr SDL_FRect NONE =           { 00, 00, 00, 16 };
+    constexpr SDL_FRect FLAG =           { 16, 00, 00, 16 };
+    constexpr SDL_FRect QUESTION_MARK =  { 32, 00, 16, 16 };
 
-    constexpr SDL_FRect MINE = {0, 16, 16, 16};
-    constexpr SDL_FRect MINE_FLAGGED = {16, 16, 16, 16};
-    constexpr SDL_FRect MINE_DETONATED = {32, 16, 16, 16};
+    constexpr SDL_FRect MINE =           { 00, 16, 16, 16 };
+    constexpr SDL_FRect MINE_FLAGGED =   { 16, 16, 16, 16 };
+    constexpr SDL_FRect MINE_DETONATED = { 32, 16, 16, 16 };
 
-    constexpr SDL_FRect COUNT_ONE = {0, 32, 16, 16};
-    constexpr SDL_FRect COUNT_TWO = { 16, 32, 16, 16};
-    constexpr SDL_FRect COUNT_THREE = {32, 32, 16, 16};
-    constexpr SDL_FRect COUNT_FOUR = {0, 48, 16, 16};
-    constexpr SDL_FRect COUNT_FIVE = {16, 48, 16, 16 };
-    constexpr SDL_FRect COUNT_SIX = {32, 48, 16, 16 };
-    constexpr SDL_FRect COUNT_SEVEN = {0, 64, 16, 16};
-    constexpr SDL_FRect COUNT_EIGHT = { 16, 64, 16, 16 };
+    constexpr SDL_FRect COUNT_ONE =      { 00, 32, 16, 16 };
+    constexpr SDL_FRect COUNT_TWO =      { 16, 32, 16, 16 };
+    constexpr SDL_FRect COUNT_THREE =    { 32, 32, 16, 16 };
+    constexpr SDL_FRect COUNT_FOUR =     { 00, 48, 16, 16 };
+    constexpr SDL_FRect COUNT_FIVE =     { 16, 48, 16, 16 };
+    constexpr SDL_FRect COUNT_SIX =      { 32, 48, 16, 16 };
+    constexpr SDL_FRect COUNT_SEVEN =    { 00, 64, 16, 16 };
+    constexpr SDL_FRect COUNT_EIGHT =    { 16, 64, 16, 16 };
 }
 
 enum class State {
@@ -47,7 +41,14 @@ enum class State {
 
 class Cell {
 public:
-    Cell(Game &game, uint16_t id, uint16_t xPosition, uint16_t yPosition, uint8_t column, uint8_t row, bool containsMine, const std::shared_ptr<ResourceContext> &resourceContext, float scale);
+    Cell(Game &game,
+        uint16_t id,
+        uint16_t xPosition,
+        uint16_t yPosition,
+        uint8_t column,
+        uint8_t row,
+        bool containsMine,
+        const std::shared_ptr<ResourceContext> &resourceContext);
 
     ~Cell() = default;
 
@@ -78,7 +79,7 @@ private:
     uint8_t surroundingMines;
     bool containsMine;
     std::shared_ptr<ResourceContext> resourceContext;
-    float scale;
 
     [[nodiscard]] SDL_FRect getNumberTextureOffset() const;
+    void drawGrid(SDL_Renderer *renderer) const;
 };
