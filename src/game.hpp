@@ -28,15 +28,15 @@ public:
     void start() const;
     void end() const;
     void tick();
-    void revealConnectedCells(uint16_t x, uint16_t y) const;
-    void handleMouseEvent() const;
+    void revealConnectedCells(uint16_t x, uint16_t y);
+    void handleMouseEvent();
 
-    [[nodiscard]] uint8_t getColumns() const { return columns; }
-    [[nodiscard]] uint8_t getRows() const { return rows; }
-    [[nodiscard]] uint16_t getMines() const { return mines; }
-    [[nodiscard]] uint16_t getFlags() const { return flags; }
-    [[nodiscard]] bool isRunning() const { return running; }
-    [[nodiscard]] uint64_t getClock() const { return clock; }
+    [[nodiscard]] uint8_t getColumns() const { return this->columns; }
+    [[nodiscard]] uint8_t getRows() const { return this->rows; }
+    [[nodiscard]] uint16_t getMines() const { return this->mines; }
+    [[nodiscard]] uint16_t getFlags() const { return this->flags; }
+    [[nodiscard]] uint64_t getClock() const { return this->clock; }
+    [[nodiscard]] bool isRunning() const { return this->running; }
 
 private:
     uint8_t columns;
@@ -49,5 +49,6 @@ private:
     std::unique_ptr<Timer> timer;
     std::shared_ptr<ResourceContext> resourceContext;
 
-    void loadCellCountTexture(SDL_Renderer* renderer) const;
+    static SDL_Texture* loadTexture(SDL_Renderer* renderer, std::string path);
+    void drawScoreboard(SDL_Renderer *renderer, uint32_t windowWidth) const;
 };

@@ -5,6 +5,7 @@
 #include "SDL3_image/SDL_image.h"
 
 #include "game.hpp"
+
 #include "util.hpp"
 #include "mouse.hpp"
 #include "pair_hash.hpp"
@@ -70,7 +71,6 @@ SDL_FRect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_
 
         for (uint8_t col = 0; col < this->columns; col++) {
             cellRow.emplace_back(std::make_unique<Cell>(
-                *this,
                 id,
                 Scaler::scaled(col * CELL_SIZE + CELL_GRID_OFFSET_X + THICK_BORDER_WIDTH * 2),
                 Scaler::scaled(row * CELL_SIZE + CELL_GRID_OFFSET_Y + THICK_BORDER_WIDTH * 2),
@@ -135,22 +135,13 @@ void Game::draw(SDL_Renderer *renderer, const int32_t windowWidth, const int32_t
     const SDL_FRect rect = {
         Scaler::scaled(THICK_BORDER_WIDTH),
         Scaler::scaled(THICK_BORDER_WIDTH),
-        Scaler::scaled(windowWidth),
-        Scaler::scaled(windowHeight)
+        static_cast<float>(windowWidth),
+        static_cast<float>(windowHeight)
     };
     SDL_RenderFillRect(renderer, &rect);
 
     // Draw the scoreboard
-    DrawBox(
-        renderer,
-        Scaler::scaled(SCOREBOARD_OFFSET),
-        Scaler::scaled(SCOREBOARD_OFFSET),
-        Scaler::scaled(windowWidth - SCOREBOARD_OFFSET * 2 + MEDIUM_BORDER_WIDTH),
-        Scaler::scaled(SCOREBOARD_HEIGHT),
-        Scaler::scaled(MEDIUM_BORDER_WIDTH),
-        BACKGROUND_COLOR,
-        BORDER_SHADOW_COLOR,
-        BORDER_HIGHLIGHT_COLOR);
+    this->drawScoreboard(renderer, windowWidth);
 
     // Draw the cell grid border
     DrawBox(
@@ -184,7 +175,7 @@ void Game::tick() {
     this->clock++;
 }
 
-void Game::revealConnectedCells(uint16_t x, uint16_t y) const {
+void Game::revealConnectedCells(uint16_t x, uint16_t y) {
     std::queue<std::pair<uint16_t, uint16_t>> queue;
     std::unordered_set<std::pair<uint16_t, uint16_t>, PairHash> visited;
 
@@ -210,6 +201,10 @@ void Game::revealConnectedCells(uint16_t x, uint16_t y) const {
             continue;
         }
 
+        if (cell->getState() == State::FLAGGED) {
+            this->flags--;
+        }
+
         cell->revealCell();
 
         if (cell->getSurroundingMines() > 0) {
@@ -223,7 +218,7 @@ void Game::revealConnectedCells(uint16_t x, uint16_t y) const {
 }
 
 
-void Game::handleMouseEvent() const {
+void Game::handleMouseEvent() {
     const std::optional<std::pair<int32_t, int32_t>> offsets = Mouse::getCellOffsets();
 
     if (!offsets.has_value()) {
@@ -239,29 +234,102 @@ void Game::handleMouseEvent() const {
     const std::unique_ptr<Cell> &cell = this->cells[row][column];
 
     if (Mouse::getEvent() == MouseEvent::BUTTON_UP && Mouse::getButton() == MouseButton::LEFT) {
-        cell->reveal();
+        const std::optional<std::pair<uint16_t, uint16_t>> clickedCell = cell->reveal();
+
+        if (clickedCell == std::nullopt) {
+            return;
+        }
+
+        this->revealConnectedCells(clickedCell->first, clickedCell->second);
+
         return;
     }
 
     if (Mouse::getEvent() == MouseEvent::BUTTON_DOWN && Mouse::getButton() == MouseButton::RIGHT) {
-        cell->mark();
+        if (cell->mark()) {
+            if (cell->getState() == State::FLAGGED) {
+                this->flags++;
+            } else if (cell->getState() == State::QUESTIONED) {
+                this->flags--;
+            }
+        }
     }
 }
 
 void Game::loadResources(SDL_Renderer* renderer) const {
-    this->loadCellCountTexture(renderer);
+    this->resourceContext->add(Texture::CELL, Game::loadTexture(renderer, "assets/images/cell.png"));
+    this->resourceContext->add(Texture::NUMBERS, Game::loadTexture(renderer, "assets/images/numbers.png"));
 }
 
-void Game::loadCellCountTexture(SDL_Renderer* renderer) const {
-    const std::string texturePath = "assets/images/cell.png";
-    SDL_Texture* texture = IMG_LoadTexture(renderer, texturePath.c_str());
+SDL_Texture* Game::loadTexture(SDL_Renderer* renderer, const std::string path) {
+    SDL_Texture* texture = IMG_LoadTexture(renderer, path.c_str());
 
     if (!texture) {
-        SDL_Log("Failed to load texture %s: %s\n", texturePath.c_str(), SDL_GetError());
-        return;
+        SDL_Log("Failed to load texture %s: %s\n", path.c_str(), SDL_GetError());
+        return nullptr;
     }
 
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 
-    this->resourceContext->add(Texture::CELL, texture);
+    return texture;
+}
+
+void Game::drawScoreboard(SDL_Renderer *renderer, const uint32_t windowWidth) const {
+    // Scoreboard
+    DrawBox(
+        renderer,
+        Scaler::scaled(SCOREBOARD_OFFSET),
+        Scaler::scaled(SCOREBOARD_OFFSET),
+        static_cast<float>(windowWidth) - Scaler::scaled(SCOREBOARD_OFFSET * 2) + Scaler::scaled(MEDIUM_BORDER_WIDTH),
+        Scaler::scaled(SCOREBOARD_HEIGHT),
+        Scaler::scaled(MEDIUM_BORDER_WIDTH),
+        BACKGROUND_COLOR,
+        BORDER_SHADOW_COLOR,
+        BORDER_HIGHLIGHT_COLOR);
+
+    // Flag Counter
+    DrawBox(renderer,
+        Scaler::scaled(SCOREBOARD_OFFSET + MEDIUM_BORDER_WIDTH + DISPLAY_OFFSET_X),
+        Scaler::scaled(SCOREBOARD_OFFSET + MEDIUM_BORDER_WIDTH + DISPLAY_OFFSET_Y),
+        Scaler::scaled(DISPLAY_WIDTH),
+        Scaler::scaled(DISPLAY_HEIGHT),
+        Scaler::scaled(THIN_BORDER_WIDTH),
+        BACKGROUND_COLOR,
+        BORDER_SHADOW_COLOR,
+        BORDER_HIGHLIGHT_COLOR);
+
+    SDL_Texture* texture = this->resourceContext->get(Texture::NUMBERS);
+
+    for (uint8_t i = 0; i < 3; i++) {
+        const SDL_FRect dest{
+            Scaler::scaled(SCOREBOARD_OFFSET + MEDIUM_BORDER_WIDTH + DISPLAY_OFFSET_X + THIN_BORDER_WIDTH) + i * Scaler::scaled(SEGMENT_WIDTH),
+            Scaler::scaled(SCOREBOARD_OFFSET + MEDIUM_BORDER_WIDTH + DISPLAY_OFFSET_Y + THIN_BORDER_WIDTH),
+            Scaler::scaled(SEGMENT_WIDTH),
+            Scaler::scaled(SEGMENT_HEIGHT)
+        };
+
+        SDL_RenderTexture(renderer, texture, &TextureOffset::NUMBER_ZERO, &dest);
+    }
+
+    // Timer
+    DrawBox(renderer,
+        windowWidth - Scaler::scaled(SCOREBOARD_OFFSET + DISPLAY_OFFSET_X + DISPLAY_WIDTH),
+        Scaler::scaled(SCOREBOARD_OFFSET + MEDIUM_BORDER_WIDTH + DISPLAY_OFFSET_Y),
+        Scaler::scaled(DISPLAY_WIDTH),
+        Scaler::scaled(DISPLAY_HEIGHT),
+        Scaler::scaled(THIN_BORDER_WIDTH),
+        BACKGROUND_COLOR,
+        BORDER_SHADOW_COLOR,
+        BORDER_HIGHLIGHT_COLOR);
+
+    for (uint8_t i = 0; i < 3; i++) {
+        const SDL_FRect dest{
+            windowWidth - Scaler::scaled(SCOREBOARD_OFFSET + DISPLAY_OFFSET_X + DISPLAY_WIDTH - THIN_BORDER_WIDTH) + i * Scaler::scaled(SEGMENT_WIDTH),
+            Scaler::scaled(SCOREBOARD_OFFSET + MEDIUM_BORDER_WIDTH + DISPLAY_OFFSET_Y + THIN_BORDER_WIDTH),
+            Scaler::scaled(SEGMENT_WIDTH),
+            Scaler::scaled(SEGMENT_HEIGHT)
+        };
+
+        SDL_RenderTexture(renderer, texture, &TextureOffset::NUMBER_ZERO, &dest);
+    }
 }

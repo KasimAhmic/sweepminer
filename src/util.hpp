@@ -5,7 +5,6 @@
 #include "color.hpp"
 
 inline void SetRenderDrawColor(SDL_Renderer* renderer, const Color& color) {
-
     SDL_SetRenderDrawColor(renderer, color.asInt().r, color.asInt().g, color.asInt().b, color.asInt().a);
 }
 

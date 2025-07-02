@@ -32,6 +32,7 @@ enum class Font {
 
 enum class Texture {
     CELL,
+    NUMBERS,
 };
 
 class ResourceContext {

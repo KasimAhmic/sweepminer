@@ -5,16 +5,14 @@
 #include "mouse.hpp"
 #include "scaler.hpp"
 
-Cell::Cell(Game& game,
-           const uint16_t id,
+Cell::Cell(const uint16_t id,
            const uint16_t xPosition,
            const uint16_t yPosition,
            const uint8_t column,
            const uint8_t row,
            const bool containsMine,
            const std::shared_ptr<ResourceContext> &resourceContext)
-    : game(game),
-      id(id),
+    : id(id),
       xPosition(xPosition),
       yPosition(yPosition),
       column(column),
@@ -115,25 +113,37 @@ SDL_FRect Cell::getNumberTextureOffset() const {
     }
 }
 
-void Cell::mark() {
-    this->state = [&] {
-        switch (this->getState()) {
-            case State::HIDDEN: return State::FLAGGED;
-            case State::FLAGGED: return State::QUESTIONED;
-            case State::QUESTIONED: return State::HIDDEN;
-            case State::REVEALED: return State::REVEALED;
-            default: return this->state;
+bool Cell::mark() {
+    switch (this->getState()) {
+        case State::HIDDEN: {
+            this->state = State::FLAGGED;
+            return true;
         }
-    }();
+
+        case State::FLAGGED: {
+            this->state = State::QUESTIONED;
+            return true;
+        }
+
+        case State::QUESTIONED: {
+            this->state = State::HIDDEN;
+            return true;
+        }
+
+        case State::REVEALED:
+        default: {
+            return false;
+        }
+    }
 }
 
-void Cell::reveal() {
+std::optional<std::pair<uint16_t, uint16_t>> Cell::reveal() {
     if (this->hasMine()) {
         this->revealCell();
-        return;
+        return std::nullopt;
     }
 
-    this->game.revealConnectedCells(this->getColumn(), this->getRow());
+    return std::make_pair(this->getColumn(), this->getRow());
 }
 
 void Cell::revealCell() {

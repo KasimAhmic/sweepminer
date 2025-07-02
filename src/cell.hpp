@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <SDL3/SDL.h>
 
 #include "color.hpp"
@@ -29,6 +30,17 @@ namespace TextureOffset {
     constexpr SDL_FRect COUNT_SIX =      { 32, 48, 16, 16 };
     constexpr SDL_FRect COUNT_SEVEN =    { 00, 64, 16, 16 };
     constexpr SDL_FRect COUNT_EIGHT =    { 16, 64, 16, 16 };
+
+    constexpr SDL_FRect NUMBER_ZERO =    {  00, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_ONE =     {  13, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_TWO =     {  26, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_THREE =   {  39, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_FOUR =    {  52, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_FIVE =    {  65, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_SIX =     {  78, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_SEVEN =   {  81, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_EIGHT =   {  94, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_NINE =    { 107, 00, 13, 23 };
 }
 
 enum class State {
@@ -40,8 +52,7 @@ enum class State {
 
 class Cell {
 public:
-    Cell(Game &game,
-        uint16_t id,
+    Cell(uint16_t id,
         uint16_t xPosition,
         uint16_t yPosition,
         uint8_t column,
@@ -52,8 +63,8 @@ public:
     ~Cell() = default;
 
     void draw(SDL_Renderer *renderer) const;
-    void mark();
-    void reveal();
+    bool mark();
+    std::optional<std::pair<uint16_t, uint16_t>> reveal();
     void revealCell();
 
     void setSurroundingMines(const uint8_t surroundingMines) { this->surroundingMines = surroundingMines; }
@@ -68,7 +79,6 @@ public:
     [[nodiscard]] bool hasMine() const { return this->containsMine; }
 
 private:
-    Game &game;
     uint16_t id;
     uint16_t xPosition;
     uint16_t yPosition;
