@@ -99,41 +99,13 @@ void Cell::draw(SDL_Renderer *renderer) const {
     }
 }
 
-bool Cell::mark() {
-    switch (this->getState()) {
-        case State::HIDDEN: {
-            this->state = State::FLAGGED;
-            return true;
-        }
-
-        case State::FLAGGED: {
-            this->state = State::QUESTIONED;
-            return true;
-        }
-
-        case State::QUESTIONED: {
-            this->state = State::HIDDEN;
-            return true;
-        }
-
-        case State::REVEALED:
-        default: {
-            return false;
-        }
-    }
-}
-
 std::optional<std::pair<uint16_t, uint16_t>> Cell::reveal() {
     if (this->hasMine()) {
-        this->revealCell();
+        this->state = Cell::State::REVEALED;
         return std::nullopt;
     }
 
     return std::make_pair(this->getColumn(), this->getRow());
-}
-
-void Cell::revealCell() {
-    this->state = State::REVEALED;
 }
 
 void Cell::drawGrid(SDL_Renderer *renderer) const {

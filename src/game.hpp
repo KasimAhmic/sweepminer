@@ -49,7 +49,14 @@ private:
     std::unique_ptr<Timer> timer;
     std::shared_ptr<ResourceContext> resourceContext;
 
-    static SDL_Texture* loadTexture(SDL_Renderer* renderer, const std::string& path);
     void drawScoreboard(SDL_Renderer *renderer, uint32_t windowWidth) const;
+
+    SDL_FRect drawScoreboardBorder(SDL_Renderer *renderer, uint32_t windowWidth) const;
+    void drawFlagCounter(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
+    void drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
+    void drawTimer(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
+    void drawCellGrid(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
+
+    static SDL_Texture* loadTexture(SDL_Renderer* renderer, const std::string& path);
     [[nodiscard]] static std::array<uint8_t, 3> getDisplayDigits(uint16_t value);
 };

@@ -4,25 +4,19 @@
 
 #include <SDL3/SDL.h>
 
-#include "color.hpp"
 #include "resource_context.hpp"
 
 class Game; // Forward declaration
 
-constexpr Color BACKGROUND_COLOR(192, 192, 192, 255);
-constexpr Color HOVERED_COLOR(150, 150, 150, 255);
-constexpr Color BORDER_HIGHLIGHT_COLOR(255, 255, 255, 255);
-constexpr Color BORDER_SHADOW_COLOR(128, 128, 128, 255);
-
-enum class State {
-    HIDDEN,
-    FLAGGED,
-    QUESTIONED,
-    REVEALED,
-};
-
 class Cell {
 public:
+    enum class State {
+        HIDDEN,
+        FLAGGED,
+        QUESTIONED,
+        REVEALED,
+    };
+
     Cell(uint16_t id,
         uint16_t xPosition,
         uint16_t yPosition,
@@ -33,21 +27,21 @@ public:
 
     ~Cell() = default;
 
-    void draw(SDL_Renderer *renderer) const;
-    bool mark();
-    std::optional<std::pair<uint16_t, uint16_t>> reveal();
-    void revealCell();
-
-    void setSurroundingMines(const uint8_t surroundingMines) { this->surroundingMines = surroundingMines; }
-
     [[nodiscard]] uint16_t getId() const { return this->id; }
     [[nodiscard]] uint16_t getXPosition() const { return this->xPosition; }
     [[nodiscard]] uint16_t getYPosition() const { return this->yPosition; }
     [[nodiscard]] uint8_t getColumn() const { return this->column; }
     [[nodiscard]] uint8_t getRow() const { return this->row; }
-    [[nodiscard]] State getState() const { return this->state; }
-    [[nodiscard]] uint8_t getSurroundingMines() const { return this->surroundingMines; }
     [[nodiscard]] bool hasMine() const { return this->containsMine; }
+
+    [[nodiscard]] uint8_t getSurroundingMines() const { return this->surroundingMines; }
+    void setSurroundingMines(const uint8_t surroundingMines) { this->surroundingMines = surroundingMines; }
+
+    [[nodiscard]] State getState() const { return this->state; }
+    void setState(const Cell::State state) { this->state = state; }
+
+    void draw(SDL_Renderer *renderer) const;
+    std::optional<std::pair<uint16_t, uint16_t>> reveal();
 
 private:
     uint16_t id;
