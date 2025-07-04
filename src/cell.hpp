@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+
 #include <SDL3/SDL.h>
 
 #include "color.hpp"
@@ -12,36 +13,6 @@ constexpr Color BACKGROUND_COLOR(192, 192, 192, 255);
 constexpr Color HOVERED_COLOR(150, 150, 150, 255);
 constexpr Color BORDER_HIGHLIGHT_COLOR(255, 255, 255, 255);
 constexpr Color BORDER_SHADOW_COLOR(128, 128, 128, 255);
-
-namespace TextureOffset {
-    constexpr SDL_FRect NONE =           { 00, 00, 16, 16 };
-    constexpr SDL_FRect FLAG =           { 16, 00, 16, 16 };
-    constexpr SDL_FRect QUESTION_MARK =  { 32, 00, 16, 16 };
-
-    constexpr SDL_FRect MINE =           { 00, 16, 16, 16 };
-    constexpr SDL_FRect MINE_FLAGGED =   { 16, 16, 16, 16 };
-    constexpr SDL_FRect MINE_DETONATED = { 32, 16, 16, 16 };
-
-    constexpr SDL_FRect COUNT_ONE =      { 00, 32, 16, 16 };
-    constexpr SDL_FRect COUNT_TWO =      { 16, 32, 16, 16 };
-    constexpr SDL_FRect COUNT_THREE =    { 32, 32, 16, 16 };
-    constexpr SDL_FRect COUNT_FOUR =     { 00, 48, 16, 16 };
-    constexpr SDL_FRect COUNT_FIVE =     { 16, 48, 16, 16 };
-    constexpr SDL_FRect COUNT_SIX =      { 32, 48, 16, 16 };
-    constexpr SDL_FRect COUNT_SEVEN =    { 00, 64, 16, 16 };
-    constexpr SDL_FRect COUNT_EIGHT =    { 16, 64, 16, 16 };
-
-    constexpr SDL_FRect NUMBER_ZERO =    {  00, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_ONE =     {  13, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_TWO =     {  26, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_THREE =   {  39, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_FOUR =    {  52, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_FIVE =    {  65, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_SIX =     {  78, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_SEVEN =   {  91, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_EIGHT =   { 104, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_NINE =    { 117, 00, 13, 23 };
-}
 
 enum class State {
     HIDDEN,
@@ -89,6 +60,5 @@ private:
     bool containsMine;
     std::shared_ptr<ResourceContext> resourceContext;
 
-    [[nodiscard]] SDL_FRect getNumberTextureOffset() const;
     void drawGrid(SDL_Renderer *renderer) const;
 };

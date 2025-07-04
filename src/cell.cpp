@@ -4,6 +4,7 @@
 #include "constants.hpp"
 #include "mouse.hpp"
 #include "scaler.hpp"
+#include "textures.hpp"
 
 Cell::Cell(const uint16_t id,
            const uint16_t xPosition,
@@ -74,9 +75,9 @@ void Cell::draw(SDL_Renderer *renderer) const {
             }
 
             if (this->getSurroundingMines() > 0) {
-                const SDL_FRect srcRect = this->getNumberTextureOffset();
+                const SDL_FRect* srcRect = TextureOffset::getCountTextureOffset(this->getSurroundingMines());
 
-                SDL_RenderTexture(renderer, texture, &srcRect, &dest);
+                SDL_RenderTexture(renderer, texture, srcRect, &dest);
             }
 
             break;
@@ -95,20 +96,6 @@ void Cell::draw(SDL_Renderer *renderer) const {
         default: {
             break;
         }
-    }
-}
-
-SDL_FRect Cell::getNumberTextureOffset() const {
-    switch (this->getSurroundingMines()) {
-        case 1: return TextureOffset::COUNT_ONE;
-        case 2: return TextureOffset::COUNT_TWO;
-        case 3: return TextureOffset::COUNT_THREE;
-        case 4: return TextureOffset::COUNT_FOUR;
-        case 5: return TextureOffset::COUNT_FIVE;
-        case 6: return TextureOffset::COUNT_SIX;
-        case 7: return TextureOffset::COUNT_SEVEN;
-        case 8: return TextureOffset::COUNT_EIGHT;
-        default: return TextureOffset::NONE;
     }
 }
 

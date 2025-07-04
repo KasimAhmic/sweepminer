@@ -5,12 +5,12 @@
 #include "SDL3_image/SDL_image.h"
 
 #include "game.hpp"
-
 #include "util.hpp"
 #include "mouse.hpp"
 #include "pair_hash.hpp"
 #include "constants.hpp"
 #include "scaler.hpp"
+#include "textures.hpp"
 
 typedef std::pair<int32_t, int32_t> Offset;
 
@@ -260,7 +260,7 @@ void Game::loadResources(SDL_Renderer* renderer) const {
     this->resourceContext->add(Texture::NUMBERS, Game::loadTexture(renderer, "assets/images/numbers.png"));
 }
 
-SDL_Texture* Game::loadTexture(SDL_Renderer* renderer, const std::string path) {
+SDL_Texture* Game::loadTexture(SDL_Renderer* renderer, const std::string& path) {
     SDL_Texture* texture = IMG_LoadTexture(renderer, path.c_str());
 
     if (!texture) {
@@ -299,6 +299,8 @@ void Game::drawScoreboard(SDL_Renderer *renderer, const uint32_t windowWidth) co
 
     SDL_Texture* texture = this->resourceContext->get(Texture::NUMBERS);
 
+    const std::array<uint8_t, 3> flagDigits = Game::getDisplayDigits(this->flags);
+
     for (uint8_t i = 0; i < 3; i++) {
         const SDL_FRect dest{
             Scaler::scaled(SCOREBOARD_OFFSET + MEDIUM_BORDER_WIDTH + DISPLAY_OFFSET_X + THIN_BORDER_WIDTH) + i * Scaler::scaled(SEGMENT_WIDTH),
@@ -307,7 +309,7 @@ void Game::drawScoreboard(SDL_Renderer *renderer, const uint32_t windowWidth) co
             Scaler::scaled(SEGMENT_HEIGHT)
         };
 
-        SDL_RenderTexture(renderer, texture, &TextureOffset::NUMBER_ZERO, &dest);
+        SDL_RenderTexture(renderer, texture, TextureOffset::getNumberTextureOffset(flagDigits.at(i)), &dest);
     }
 
     // Timer
@@ -321,13 +323,7 @@ void Game::drawScoreboard(SDL_Renderer *renderer, const uint32_t windowWidth) co
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
 
-    const std::array clockDigits = {
-        static_cast<uint8_t>(this->clock / 100),       // Pull out the first digit
-        static_cast<uint8_t>((this->clock / 10) % 10), // Pull out the second digit
-        static_cast<uint8_t>(this->clock % 10)         // Pull out the third digit
-    };
-
-    static_assert(clockDigits.size() == 3, "Clock digits array must have exactly 3 elements");
+    const std::array<uint8_t, 3> clockDigits = Game::getDisplayDigits(this->clock);
 
     for (uint8_t i = 0; i < 3; i++) {
         const SDL_FRect dest{
@@ -337,22 +333,14 @@ void Game::drawScoreboard(SDL_Renderer *renderer, const uint32_t windowWidth) co
             Scaler::scaled(SEGMENT_HEIGHT)
         };
 
-        SDL_RenderTexture(renderer, texture, Game::getNumberTextureOffset(clockDigits.at(i)), &dest);
+        SDL_RenderTexture(renderer, texture, TextureOffset::getNumberTextureOffset(clockDigits.at(i)), &dest);
     }
 }
 
-const SDL_FRect *Game::getNumberTextureOffset(const uint8_t number) {
-    switch (number) {
-        case 0: return &TextureOffset::NUMBER_ZERO;
-        case 1: return &TextureOffset::NUMBER_ONE;
-        case 2: return &TextureOffset::NUMBER_TWO;
-        case 3: return &TextureOffset::NUMBER_THREE;
-        case 4: return &TextureOffset::NUMBER_FOUR;
-        case 5: return &TextureOffset::NUMBER_FIVE;
-        case 6: return &TextureOffset::NUMBER_SIX;
-        case 7: return &TextureOffset::NUMBER_SEVEN;
-        case 8: return &TextureOffset::NUMBER_EIGHT;
-        case 9: return &TextureOffset::NUMBER_NINE;
-        default: throw std::out_of_range("Number must be between 0 and 9");
-    }
+std::array<uint8_t, 3> Game::getDisplayDigits(const uint16_t value) {
+    return {
+        static_cast<uint8_t>(value / 100 % 10), // Pull out the first digit
+        static_cast<uint8_t>(value /  10 % 10), // Pull out the second digit
+        static_cast<uint8_t>(value /   1 % 10)  // Pull out the third digit
+    };
 }

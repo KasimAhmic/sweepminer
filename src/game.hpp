@@ -49,7 +49,7 @@ private:
     std::unique_ptr<Timer> timer;
     std::shared_ptr<ResourceContext> resourceContext;
 
-    static SDL_Texture* loadTexture(SDL_Renderer* renderer, std::string path);
+    static SDL_Texture* loadTexture(SDL_Renderer* renderer, const std::string& path);
     void drawScoreboard(SDL_Renderer *renderer, uint32_t windowWidth) const;
-    [[nodiscard]] static const SDL_FRect *getNumberTextureOffset(uint8_t number);
+    [[nodiscard]] static std::array<uint8_t, 3> getDisplayDigits(uint16_t value);
 };
