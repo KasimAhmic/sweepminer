@@ -7,8 +7,8 @@
 #include "textures.hpp"
 
 Cell::Cell(const uint16_t id,
-           const uint16_t xPosition,
-           const uint16_t yPosition,
+           const float xPosition,
+           const float yPosition,
            const uint8_t column,
            const uint8_t row,
            const bool containsMine,
@@ -18,28 +18,28 @@ Cell::Cell(const uint16_t id,
       yPosition(yPosition),
       column(column),
       row(row),
-      state(State::HIDDEN),
-      surroundingMines(0),
       containsMine(containsMine),
-      resourceContext(resourceContext) {}
+      resourceContext(resourceContext),
+      state(State::HIDDEN),
+      surroundingMines(0) {}
 
 void Cell::draw(SDL_Renderer *renderer) const {
     const SDL_FRect dest{
-        .x = static_cast<float>(this->xPosition),
-        .y = static_cast<float>(this->yPosition),
-        .w = Scaler::scaled(CELL_SIZE),
-        .h = Scaler::scaled(CELL_SIZE)
+        this->xPosition,
+        this->yPosition,
+        Scaler::scaled(CELL_SIZE),
+        Scaler::scaled(CELL_SIZE)
     };
 
     if (this->state != State::REVEALED) {
-        int32_t x = -1;
-        int32_t y = -1;
+        const SDL_FRect cellRect{
+            this->xPosition,
+            this->yPosition,
+            Scaler::scaled(CELL_SIZE),
+            Scaler::scaled(CELL_SIZE)
+        };
 
-        if (const auto offsets = Mouse::getCellOffsets(); offsets.has_value()) {
-            std::tie(x, y) = *offsets;
-        }
-
-        if (x == this->column && y == this->row && Mouse::getState() == MouseState::DOWN && Mouse::getButton() == MouseButton::LEFT) {
+        if (Mouse::withinRegion(&cellRect) && Mouse::getState() == MouseState::DOWN && Mouse::getButton() == MouseButton::LEFT) {
             this->drawGrid(renderer);
             return;
         }
@@ -116,14 +116,14 @@ void Cell::drawGrid(SDL_Renderer *renderer) const {
 
         SDL_RenderLine(renderer,
             this->xPosition,
-            static_cast<float>(this->yPosition) + offset,
-            static_cast<float>(this->xPosition) + Scaler::scaled(CELL_SIZE) - 1,
-            static_cast<float>(this->yPosition) + offset);
+            this->yPosition + offset,
+            this->xPosition + Scaler::scaled(CELL_SIZE) - 1,
+            this->yPosition + offset);
 
         SDL_RenderLine(renderer,
-            static_cast<float>(this->xPosition) + offset,
+            this->xPosition + offset,
             this->yPosition,
-            static_cast<float>(this->xPosition) + offset,
-            static_cast<float>(this->yPosition) + Scaler::scaled(CELL_SIZE) - 1);
+            this->xPosition + offset,
+            this->yPosition + Scaler::scaled(CELL_SIZE) - 1);
     }
 }

@@ -18,8 +18,8 @@ public:
     };
 
     Cell(uint16_t id,
-        uint16_t xPosition,
-        uint16_t yPosition,
+        float xPosition,
+        float yPosition,
         uint8_t column,
         uint8_t row,
         bool containsMine,
@@ -28,8 +28,8 @@ public:
     ~Cell() = default;
 
     [[nodiscard]] uint16_t getId() const { return this->id; }
-    [[nodiscard]] uint16_t getXPosition() const { return this->xPosition; }
-    [[nodiscard]] uint16_t getYPosition() const { return this->yPosition; }
+    [[nodiscard]] float getXPosition() const { return this->xPosition; }
+    [[nodiscard]] float getYPosition() const { return this->yPosition; }
     [[nodiscard]] uint8_t getColumn() const { return this->column; }
     [[nodiscard]] uint8_t getRow() const { return this->row; }
     [[nodiscard]] bool hasMine() const { return this->containsMine; }
@@ -45,8 +45,8 @@ public:
 
 private:
     uint16_t id;
-    uint16_t xPosition;
-    uint16_t yPosition;
+    float xPosition;
+    float yPosition;
     uint8_t column;
     uint8_t row;
     State state;

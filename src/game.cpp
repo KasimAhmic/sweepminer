@@ -41,7 +41,7 @@ Game::Game():
     rows(0),
     mines(0),
     flags(0),
-    running(false),
+    state(Game::State::NEW_GAME),
     clock(0),
     timer(std::make_unique<Timer>([this] { this->tick(); }, 1000)),
     resourceContext(std::make_shared<ResourceContext>()) {}
@@ -51,6 +51,8 @@ SDL_FRect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_
     this->rows = std::min(rows, MAX_ROWS);
     this->mines = std::min(mines, MAX_MINES);
     this->flags = this->mines;
+    this->state = Game::State::NEW_GAME;
+    this->clock = 0;
 
     const uint16_t totalCells = this->columns * this->rows;
 
@@ -133,26 +135,34 @@ void Game::draw(SDL_Renderer *renderer, const int32_t windowWidth, const int32_t
     const SDL_FRect rect = {
         Scaler::scaled(THICK_BORDER_WIDTH),
         Scaler::scaled(THICK_BORDER_WIDTH),
-        static_cast<float>(windowWidth),
-        static_cast<float>(windowHeight)
+        static_cast<float>(windowWidth) - Scaler::scaled(THICK_BORDER_WIDTH),
+        static_cast<float>(windowHeight) - Scaler::scaled(THICK_BORDER_WIDTH)
     };
     SDL_RenderFillRect(renderer, &rect);
 
-    SDL_FRect scoreboardBoundingBox = this->drawScoreboardBorder(renderer, windowWidth);
+    const SDL_FRect scoreboardBoundingBox = this->drawScoreboardBorder(renderer, &rect);
     this->drawFlagCounter(renderer, &scoreboardBoundingBox);
     this->drawButton(renderer, &scoreboardBoundingBox);
     this->drawTimer(renderer, &scoreboardBoundingBox);
 
-    SDL_FRect cellGridBoundingBox{};
-    this->drawCellGrid(renderer, &scoreboardBoundingBox); // TODO: Change
+    const SDL_FRect cellGridBoundingBox{
+        scoreboardBoundingBox.x,
+        scoreboardBoundingBox.y + scoreboardBoundingBox.h + Scaler::scaled(SPACING),
+        static_cast<float>(this->columns) * Scaler::scaled(CELL_SIZE) + Scaler::scaled(THICK_BORDER_WIDTH * 2),
+        static_cast<float>(this->rows) * Scaler::scaled(CELL_SIZE) + Scaler::scaled(THICK_BORDER_WIDTH * 2),
+    };
+
+    this->drawCellGrid(renderer, &cellGridBoundingBox);
 }
 
-void Game::start() const {
+void Game::start() {
     this->timer->start();
+    this->state = Game::State::RUNNING;
 }
 
-void Game::end() const {
+void Game::end(const bool victory) {
     this->timer->stop();
+    this->state = victory ? Game::State::VICTORY : Game::State::DEFEAT;
 }
 
 void Game::tick() {
@@ -202,24 +212,39 @@ void Game::revealConnectedCells(uint16_t x, uint16_t y) {
 }
 
 void Game::handleMouseEvent() {
-    const std::optional<std::pair<int32_t, int32_t>> offsets = Mouse::getCellOffsets();
-
-    if (!offsets.has_value()) {
+    if (this->getState() != Game::State::RUNNING && this->getState() != Game::State::NEW_GAME) {
         return;
     }
 
-    const auto [column, row] = offsets.value();
+    Cell *cell = nullptr;
 
-    if (column >= this->columns || row >= this->rows) {
-        return;
+    for (const auto &row : this->cells) {
+        for (const auto &rowCell : row) {
+            const SDL_FRect cellRegion{
+                rowCell->getXPosition(),
+                rowCell->getYPosition(),
+                Scaler::scaled(CELL_SIZE),
+                Scaler::scaled(CELL_SIZE)
+            };
+
+            if (Mouse::withinRegion(&cellRegion)) {
+                cell = rowCell.get();
+                break;
+            }
+        }
     }
 
-    const std::unique_ptr<Cell> &cell = this->cells[row][column];
+    if (cell == nullptr) {
+        return;
+    }
 
     if (Mouse::getEvent() == MouseEvent::BUTTON_UP && Mouse::getButton() == MouseButton::LEFT) {
+        this->start();
+
         const std::optional<std::pair<uint16_t, uint16_t>> clickedCell = cell->reveal();
 
         if (clickedCell == std::nullopt) {
+            this->end(false);
             return;
         }
 
@@ -271,25 +296,25 @@ SDL_Texture* Game::loadTexture(SDL_Renderer* renderer, const std::string& path) 
     return texture;
 }
 
-SDL_FRect Game::drawScoreboardBorder(SDL_Renderer *renderer, const uint32_t windowWidth) const {
-    const SDL_FRect boundingBox{
-        Scaler::scaled(SCOREBOARD_OFFSET),
-        Scaler::scaled(SCOREBOARD_OFFSET),
-        static_cast<float>(windowWidth) - Scaler::scaled(SCOREBOARD_OFFSET * 2) + Scaler::scaled(MEDIUM_BORDER_WIDTH),
+SDL_FRect Game::drawScoreboardBorder(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const {
+    const SDL_FRect scoreboardBoundingBox{
+        boundingBox->x + Scaler::scaled(SPACING),
+        boundingBox->y + Scaler::scaled(SPACING),
+        boundingBox->w - Scaler::scaled(SPACING * 2),
         Scaler::scaled(SCOREBOARD_HEIGHT)
     };
 
     DrawBox(renderer,
-        boundingBox.x,
-        boundingBox.y,
-        boundingBox.w,
-        boundingBox.h,
+        scoreboardBoundingBox.x,
+        scoreboardBoundingBox.y,
+        scoreboardBoundingBox.w,
+        scoreboardBoundingBox.h,
         Scaler::scaled(MEDIUM_BORDER_WIDTH),
         BACKGROUND_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
 
-    return boundingBox;
+    return scoreboardBoundingBox;
 }
 
 void Game::drawFlagCounter(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const {
@@ -331,6 +356,7 @@ void Game::drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) cons
         Scaler::scaled(BUTTON_HEIGHT)
     };
 
+    // Top left border
     DrawBox(renderer,
         button.x - Scaler::scaled(THIN_BORDER_WIDTH),
         button.y - Scaler::scaled(THIN_BORDER_WIDTH),
@@ -341,6 +367,7 @@ void Game::drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) cons
         BORDER_SHADOW_COLOR,
         BORDER_SHADOW_COLOR);
 
+    // Bottom right border
     DrawBox(renderer,
         button.x,
         button.y,
@@ -351,27 +378,48 @@ void Game::drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) cons
         BORDER_SHADOW_COLOR,
         BORDER_SHADOW_COLOR);
 
+    const bool isPressed = Mouse::withinRegion(&button) && Mouse::isLeftClicking() && Mouse::eventStartedWithinRegion(&button);
+
+    // Button
     DrawBox(renderer,
         button.x,
         button.y,
         button.w,
         button.h,
-        Scaler::scaled(MEDIUM_BORDER_WIDTH),
+        isPressed ? Scaler::scaled(THIN_BORDER_WIDTH) : Scaler::scaled(MEDIUM_BORDER_WIDTH),
         BACKGROUND_COLOR,
-        BORDER_HIGHLIGHT_COLOR,
-        BORDER_SHADOW_COLOR);
+        isPressed ? BORDER_SHADOW_COLOR : BORDER_HIGHLIGHT_COLOR,
+        isPressed ? BACKGROUND_COLOR : BORDER_SHADOW_COLOR);
+
+    // TODO: This is not quite right, fix it later
+    const float smileyOffset = isPressed ? Scaler::scaled(THIN_BORDER_WIDTH) : 0.0f;
 
     const SDL_FRect smiley{
-        button.x + Scaler::scaled(THIN_BORDER_WIDTH),
-        button.y + Scaler::scaled(THIN_BORDER_WIDTH),
+        button.x + Scaler::scaled(THIN_BORDER_WIDTH) + smileyOffset,
+        button.y + Scaler::scaled(THIN_BORDER_WIDTH) + smileyOffset,
         Scaler::scaled(TextureOffset::SMILEY_DEFAULT.w),
         Scaler::scaled(TextureOffset::SMILEY_DEFAULT.h)
     };
 
-    SDL_RenderTexture(renderer,
-        texture,
-        Mouse::getState() == MouseState::DOWN && Mouse::getButton() == MouseButton::LEFT ? &TextureOffset::SMILEY_WORRIED : &TextureOffset::SMILEY_DEFAULT,
-        &smiley);
+    SDL_FRect textureOffset = TextureOffset::SMILEY_DEFAULT;
+
+    if (this->getState() == Game::State::NEW_GAME || this->getState() == Game::State::RUNNING) {
+        textureOffset = TextureOffset::SMILEY_DEFAULT;
+
+        if (Mouse::isLeftClicking() && !Mouse::eventStartedWithinRegion(&button)) {
+            textureOffset = TextureOffset::SMILEY_WORRIED;
+        }
+    } else if (this->getState() == Game::State::VICTORY) {
+        textureOffset = TextureOffset::SMILEY_VICTORY;
+    } else if (this->getState() == Game::State::DEFEAT) {
+        textureOffset = TextureOffset::SMILEY_DEFEAT;
+    }
+
+    if (Mouse::isLeftClicking() && Mouse::eventStartedWithinRegion(&button) && Mouse::withinRegion(&button)) {
+        textureOffset = TextureOffset::SMILEY_DEFAULT;
+    }
+
+    SDL_RenderTexture(renderer, texture, &textureOffset, &smiley);
 }
 
 void Game::drawTimer(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const {
@@ -404,17 +452,18 @@ void Game::drawTimer(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const
 }
 
 void Game::drawCellGrid(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const {
+    // Border
     DrawBox(renderer,
-        Scaler::scaled(THICK_BORDER_WIDTH + CELL_GRID_OFFSET_X),
-        Scaler::scaled(THICK_BORDER_WIDTH + CELL_GRID_OFFSET_Y),
-        Scaler::scaled(CELL_SIZE * columns + THICK_BORDER_WIDTH * 2),
-        Scaler::scaled(CELL_SIZE * rows + THICK_BORDER_WIDTH * 2),
+        boundingBox->x,
+        boundingBox->y,
+        boundingBox->w,
+        boundingBox->h,
         Scaler::scaled(THICK_BORDER_WIDTH),
         BACKGROUND_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
 
-    // Draw the cells
+    // Cell grid
     for (const auto &row : this->cells) {
         for (const auto &cell : row) {
             cell->draw(renderer);

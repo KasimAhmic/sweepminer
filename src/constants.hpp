@@ -6,7 +6,6 @@ constexpr uint8_t MEDIUM_BORDER_WIDTH = 2;
 constexpr uint8_t THICK_BORDER_WIDTH = 3;
 
 constexpr uint8_t SPACING = 6;
-constexpr uint8_t SCOREBOARD_OFFSET = 9;
 constexpr uint8_t SCOREBOARD_HEIGHT = 37;
 constexpr uint8_t DISPLAY_OFFSET_X = 7;
 constexpr uint8_t DISPLAY_OFFSET_Y = 6;

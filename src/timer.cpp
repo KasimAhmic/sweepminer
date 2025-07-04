@@ -25,6 +25,8 @@ void Timer::start() {
     });
 }
 
+// TODO: Since this is a synchronous stop, it'll block the main thread up to `interval` milliseconds.
+// TODO: Fix this later
 void Timer::stop() {
     this->running.store(false);
 

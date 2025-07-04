@@ -30,23 +30,36 @@ public:
     [[nodiscard]] static std::pair<int32_t, int32_t> getPosition() { return Mouse::position; }
     static void setPosition(const int32_t x, const int32_t y) { Mouse::position = { x, y }; }
 
+    [[nodiscard]] static std::pair<int32_t, int32_t> getEventPosition() { return Mouse::eventPosition; }
+    static void setEventPosition(const int32_t x, const int32_t y) { Mouse::eventPosition = { x, y }; }
+
     [[nodiscard]] static MouseState getState() { return Mouse::state; }
-    static void setState(const MouseState newState) { Mouse::state = newState; }
+    static void setState(const MouseState state) { Mouse::state = state; }
 
     [[nodiscard]] static MouseEvent getEvent() { return Mouse::event; }
-    static void setEvent(const MouseEvent newEvent) { Mouse::event = newEvent; }
+    static void setEvent(const MouseEvent event) { Mouse::event = event; }
 
     [[nodiscard]] static MouseButton getButton() { return Mouse::button; }
-    static void setButton(const MouseButton newButton) { Mouse::button = newButton; }
-    static void setButton(uint8_t newButton);
+    static void setButton(const MouseButton button) { Mouse::button = button; }
+    static void setButton(uint8_t button);
+
+    static bool isLeftClicking();
+    static bool isRightClicking();
 
     static std::optional<std::pair<int32_t, int32_t>> getCellOffsets();
+    static bool withinRegion(const SDL_FRect *region);
+    static bool eventStartedWithinRegion(const SDL_FRect *region);
 
 private:
     /**
-     * The column and row offsets of the cells that the mouse is over.
+     * The X and Y position of the mouse cursor.
      */
     static std::pair<int32_t, int32_t> position;
+
+    /**
+     * The position of the last mouse event.
+     */
+    static std::pair<int32_t, int32_t> eventPosition;
 
     /**
      * The current state of the mouse.

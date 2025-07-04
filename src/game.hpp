@@ -17,6 +17,13 @@ enum class Difficulty {
 
 class Game {
 public:
+    enum class State {
+        NEW_GAME,
+        RUNNING,
+        VICTORY,
+        DEFEAT,
+    };
+
     Game();
     ~Game() = default;
 
@@ -25,8 +32,8 @@ public:
 
     void loadResources(SDL_Renderer* renderer) const;
     void draw(SDL_Renderer *renderer, int32_t windowWidth, int32_t windowHeight) const;
-    void start() const;
-    void end() const;
+    void start();
+    void end(bool victory);
     void tick();
     void revealConnectedCells(uint16_t x, uint16_t y);
     void handleMouseEvent();
@@ -36,22 +43,22 @@ public:
     [[nodiscard]] uint16_t getMines() const { return this->mines; }
     [[nodiscard]] uint16_t getFlags() const { return this->flags; }
     [[nodiscard]] uint16_t getClock() const { return this->clock; }
-    [[nodiscard]] bool isRunning() const { return this->running; }
+
+    [[nodiscard]] Game::State getState() const { return this->state; }
+    void setState(const Game::State state) { this->state = state; }
 
 private:
     uint8_t columns;
     uint8_t rows;
     uint16_t mines;
     uint16_t flags;
-    bool running;
+    Game::State state;
     uint16_t clock;
     std::vector<std::vector<std::unique_ptr<Cell>>> cells;
     std::unique_ptr<Timer> timer;
     std::shared_ptr<ResourceContext> resourceContext;
 
-    void drawScoreboard(SDL_Renderer *renderer, uint32_t windowWidth) const;
-
-    SDL_FRect drawScoreboardBorder(SDL_Renderer *renderer, uint32_t windowWidth) const;
+    SDL_FRect drawScoreboardBorder(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
     void drawFlagCounter(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
     void drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
     void drawTimer(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;

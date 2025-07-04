@@ -35,6 +35,8 @@ namespace TextureOffset {
 
     constexpr SDL_FRect SMILEY_DEFAULT = { 00, 00, 20, 20 };
     constexpr SDL_FRect SMILEY_WORRIED = { 20, 00, 20, 20 };
+    constexpr SDL_FRect SMILEY_DEFEAT =  { 40, 00, 20, 20 };
+    constexpr SDL_FRect SMILEY_VICTORY = { 60, 00, 20, 20 };
 
     inline const SDL_FRect* getNumberTextureOffset(const uint8_t number) {
         switch (number) {

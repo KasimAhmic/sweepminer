@@ -114,8 +114,6 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
 
     SDL_Log("Application started successfully!");
 
-    game->start();
-
     return SDL_APP_CONTINUE;
 }
 
@@ -130,6 +128,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
             Mouse::setButton(event->button.button);
             Mouse::setEvent(MouseEvent::BUTTON_DOWN);
+            Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
             Mouse::setState(MouseState::DOWN);
             game->handleMouseEvent();
             break;
@@ -138,6 +137,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
         case SDL_EVENT_MOUSE_BUTTON_UP: {
             Mouse::setButton(event->button.button);
             Mouse::setEvent(MouseEvent::BUTTON_UP);
+            Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
             Mouse::setState(MouseState::UP);
             game->handleMouseEvent();
             break;
