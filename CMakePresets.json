@@ -11,10 +11,11 @@
       "displayName": "Windows Debug",
       "description": "Debug build for Windows",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/windows-debug",
+      "binaryDir": "${sourceDir}/build/vcpkg-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_SYSTEM_NAME": "Windows"
+        "CMAKE_SYSTEM_NAME": "Windows",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
     },
     {
@@ -22,10 +23,11 @@
       "displayName": "Windows Release",
       "description": "Release build for Windows",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/windows-release",
+      "binaryDir": "${sourceDir}/build/vcpkg-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_SYSTEM_NAME": "Windows"
+        "CMAKE_SYSTEM_NAME": "Windows",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
     },
     {
@@ -33,10 +35,11 @@
       "displayName": "Linux Debug",
       "description": "Debug build for Linux",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/linux-debug",
+      "binaryDir": "${sourceDir}/build/vcpkg-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_SYSTEM_NAME": "Linux"
+        "CMAKE_SYSTEM_NAME": "Linux",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
     },
     {
@@ -44,10 +47,11 @@
       "displayName": "Linux Release",
       "description": "Release build for Linux",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/linux-release",
+      "binaryDir": "${sourceDir}/build/vcpkg-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_SYSTEM_NAME": "Linux"
+        "CMAKE_SYSTEM_NAME": "Linux",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
     },
     {
@@ -55,10 +59,11 @@
       "displayName": "macOS Debug",
       "description": "Debug build for macOS",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/macos-debug",
+      "binaryDir": "${sourceDir}/build/vcpkg-debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_SYSTEM_NAME": "Darwin"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_SYSTEM_NAME": "Darwin",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
     },
     {
@@ -66,10 +71,11 @@
       "displayName": "macOS Release",
       "description": "Release build for macOS",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/macos-release",
+      "binaryDir": "${sourceDir}/build/vcpkg-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_SYSTEM_NAME": "Darwin"
+        "CMAKE_SYSTEM_NAME": "Darwin",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
     }
   ],

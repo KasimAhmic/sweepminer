@@ -61,7 +61,6 @@ void Cell::draw(SDL_Renderer *renderer) const {
     SDL_Texture* texture = this->resourceContext->get(Texture::CELL);
 
     if (!texture) {
-        SDL_Log("No texture loaded for a mine count of %d", this->getSurroundingMines());
         return;
     }
 

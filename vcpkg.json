@@ -1,0 +1,9 @@
+{
+  "name": "sweepminer",
+  "version": "0.0.1",
+  "dependencies": [
+    { "name": "sdl3" },
+    { "name": "sdl3-ttf" },
+    { "name": "sdl3-image", "features": ["png"] }
+  ]
+}
