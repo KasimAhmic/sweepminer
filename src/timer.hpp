@@ -5,15 +5,15 @@
 
 class Timer {
 public:
-    Timer(const std::function<void()> &callback, long interval);
+    Timer(const std::function<void()> &callback, uint32_t interval);
     ~Timer();
 
     void start();
     void stop();
-    void restart();
+
 private:
-    std::function<void(void)> callback;
-    long interval;
-    bool running;
-    std::thread thread;
+    std::function<void()> callback;
+    uint32_t interval;
+    std::atomic<bool> running;
+    std::thread worker;
 };

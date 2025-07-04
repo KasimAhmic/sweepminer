@@ -114,6 +114,8 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
 
     SDL_Log("Application started successfully!");
 
+    game->start();
+
     return SDL_APP_CONTINUE;
 }
 

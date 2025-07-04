@@ -15,14 +15,13 @@
 typedef std::pair<int32_t, int32_t> Offset;
 
 constexpr Offset NORTH_WEST = {-1, -1};
-constexpr Offset NORTH =      {+0, -1};
+constexpr Offset NORTH      = {+0, -1};
 constexpr Offset NORTH_EAST = {+1, -1};
-constexpr Offset EAST =       {+1, +0};
+constexpr Offset EAST       = {+1, +0};
 constexpr Offset SOUTH_EAST = {+1, +1};
-constexpr Offset SOUTH =      {+0, +1};
+constexpr Offset SOUTH      = {+0, +1};
 constexpr Offset SOUTH_WEST = {-1, +1};
-constexpr Offset WEST =       {-1, +0};
-constexpr Offset TEST =       {-1, +0};
+constexpr Offset WEST       = {-1, +0};
 
 constexpr std::array EIGHT_DIR_CELL_OFFSETS = {
     NORTH_WEST, NORTH, NORTH_EAST,
@@ -172,7 +171,7 @@ void Game::end() const {
 }
 
 void Game::tick() {
-    this->clock++;
+    this->clock = std::min(this->clock + 1, 999);
 }
 
 void Game::revealConnectedCells(uint16_t x, uint16_t y) {
@@ -322,6 +321,14 @@ void Game::drawScoreboard(SDL_Renderer *renderer, const uint32_t windowWidth) co
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
 
+    const std::array clockDigits = {
+        static_cast<uint8_t>(this->clock / 100),       // Pull out the first digit
+        static_cast<uint8_t>((this->clock / 10) % 10), // Pull out the second digit
+        static_cast<uint8_t>(this->clock % 10)         // Pull out the third digit
+    };
+
+    static_assert(clockDigits.size() == 3, "Clock digits array must have exactly 3 elements");
+
     for (uint8_t i = 0; i < 3; i++) {
         const SDL_FRect dest{
             windowWidth - Scaler::scaled(SCOREBOARD_OFFSET + DISPLAY_OFFSET_X + DISPLAY_WIDTH - THIN_BORDER_WIDTH) + i * Scaler::scaled(SEGMENT_WIDTH),
@@ -330,6 +337,22 @@ void Game::drawScoreboard(SDL_Renderer *renderer, const uint32_t windowWidth) co
             Scaler::scaled(SEGMENT_HEIGHT)
         };
 
-        SDL_RenderTexture(renderer, texture, &TextureOffset::NUMBER_ZERO, &dest);
+        SDL_RenderTexture(renderer, texture, Game::getNumberTextureOffset(clockDigits.at(i)), &dest);
+    }
+}
+
+const SDL_FRect *Game::getNumberTextureOffset(const uint8_t number) {
+    switch (number) {
+        case 0: return &TextureOffset::NUMBER_ZERO;
+        case 1: return &TextureOffset::NUMBER_ONE;
+        case 2: return &TextureOffset::NUMBER_TWO;
+        case 3: return &TextureOffset::NUMBER_THREE;
+        case 4: return &TextureOffset::NUMBER_FOUR;
+        case 5: return &TextureOffset::NUMBER_FIVE;
+        case 6: return &TextureOffset::NUMBER_SIX;
+        case 7: return &TextureOffset::NUMBER_SEVEN;
+        case 8: return &TextureOffset::NUMBER_EIGHT;
+        case 9: return &TextureOffset::NUMBER_NINE;
+        default: throw std::out_of_range("Number must be between 0 and 9");
     }
 }

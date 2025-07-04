@@ -35,7 +35,7 @@ public:
     [[nodiscard]] uint8_t getRows() const { return this->rows; }
     [[nodiscard]] uint16_t getMines() const { return this->mines; }
     [[nodiscard]] uint16_t getFlags() const { return this->flags; }
-    [[nodiscard]] uint64_t getClock() const { return this->clock; }
+    [[nodiscard]] uint16_t getClock() const { return this->clock; }
     [[nodiscard]] bool isRunning() const { return this->running; }
 
 private:
@@ -44,11 +44,12 @@ private:
     uint16_t mines;
     uint16_t flags;
     bool running;
-    uint64_t clock;
+    uint16_t clock;
     std::vector<std::vector<std::unique_ptr<Cell>>> cells;
     std::unique_ptr<Timer> timer;
     std::shared_ptr<ResourceContext> resourceContext;
 
     static SDL_Texture* loadTexture(SDL_Renderer* renderer, std::string path);
     void drawScoreboard(SDL_Renderer *renderer, uint32_t windowWidth) const;
+    [[nodiscard]] static const SDL_FRect *getNumberTextureOffset(uint8_t number);
 };

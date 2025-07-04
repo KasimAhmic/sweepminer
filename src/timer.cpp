@@ -1,35 +1,34 @@
 #include "timer.hpp"
 
-Timer::Timer(const std::function<void()> &callback, const long interval) {
-    this->callback = callback;
-    this->interval = interval;
-    this->running = false;
-}
+Timer::Timer(const std::function<void()> &callback, const uint32_t interval):
+    callback(callback),
+    interval(interval),
+    running(false) {}
 
 Timer::~Timer() {
     this->stop();
 }
 
 void Timer::start() {
-    this->running = true;
+    if (this->running.load()) {
+        return;
+    }
 
-    this->thread = std::thread([&] {
-        while (this->running) {
-            const auto delta = std::chrono::steady_clock::now() + std::chrono::microseconds(this->interval);
+    this->running.store(true);
+
+    this->worker = std::thread([this] {
+        while (this->running.load()) {
+            const auto delta = std::chrono::steady_clock::now() + std::chrono::milliseconds(this->interval);
             this->callback();
             std::this_thread::sleep_until(delta);
         }
     });
-
-    this->thread.detach();
 }
 
 void Timer::stop() {
-    this->running = false;
-    this->thread.~thread();
-}
+    this->running.store(false);
 
-void Timer::restart() {
-    this->stop();
-    this->start();
+    if (this->worker.joinable()) {
+        worker.join();
+    }
 }

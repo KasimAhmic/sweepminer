@@ -38,9 +38,9 @@ namespace TextureOffset {
     constexpr SDL_FRect NUMBER_FOUR =    {  52, 00, 13, 23 };
     constexpr SDL_FRect NUMBER_FIVE =    {  65, 00, 13, 23 };
     constexpr SDL_FRect NUMBER_SIX =     {  78, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_SEVEN =   {  81, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_EIGHT =   {  94, 00, 13, 23 };
-    constexpr SDL_FRect NUMBER_NINE =    { 107, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_SEVEN =   {  91, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_EIGHT =   { 104, 00, 13, 23 };
+    constexpr SDL_FRect NUMBER_NINE =    { 117, 00, 13, 23 };
 }
 
 enum class State {
