@@ -80,7 +80,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     ImGui_ImplSDLRenderer3_Init(renderer);
 
     Scaler::setUserScale(2.0f);
-    Scaler::setDeviceScale(static_cast<int32_t>(SDL_GetWindowDisplayScale(window)));
+    Scaler::setDeviceScale(SDL_GetWindowDisplayScale(window));
 
     menuBar = std::make_unique<MenuBar>(game.get());
     game = std::make_unique<Game>();
@@ -91,8 +91,8 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     const SDL_FRect gameSize = game->getBoundingBox();
 
     SDL_SetWindowSize(window,
-        static_cast<int32_t>(gameSize.w) * Scaler::getUserScale(),
-        static_cast<int32_t>(gameSize.h) * Scaler::getUserScale() + menuBar->getHeight());
+        static_cast<int32_t>(gameSize.w),
+        static_cast<int32_t>(gameSize.h + menuBar->getHeight()));
 
     game->loadResources(renderer);
 

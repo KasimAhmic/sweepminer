@@ -1,8 +1,8 @@
 #include "scaler.hpp"
 
-int32_t Scaler::userScale = 1;
-int32_t Scaler::deviceScale = 1;
+float Scaler::userScale = 1.0f;
+float Scaler::deviceScale = 1.0f;
 
-int32_t Scaler::getTotalScale() {
+float Scaler::getTotalScale() {
     return Scaler::userScale * Scaler::deviceScale;
 }

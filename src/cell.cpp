@@ -27,16 +27,16 @@ void Cell::draw(SDL_Renderer *renderer) const {
     const SDL_FRect dest{
         this->xPosition,
         this->yPosition,
-        Scaler::scaled(CELL_SIZE),
-        Scaler::scaled(CELL_SIZE)
+        (CELL_SIZE),
+        (CELL_SIZE)
     };
 
     if (this->state != State::REVEALED) {
         const SDL_FRect cellRect{
             this->xPosition,
             this->yPosition,
-            Scaler::scaled(CELL_SIZE),
-            Scaler::scaled(CELL_SIZE)
+            (CELL_SIZE),
+            (CELL_SIZE)
         };
 
         if (Mouse::withinRegion(&cellRect) && Mouse::getState() == MouseState::DOWN && Mouse::getButton() == MouseButton::LEFT) {
@@ -47,9 +47,9 @@ void Cell::draw(SDL_Renderer *renderer) const {
         DrawBox(renderer,
             dest.x,
             dest.y,
-            Scaler::scaled(CELL_SIZE),
-            Scaler::scaled(CELL_SIZE),
-            Scaler::scaled(MEDIUM_BORDER_WIDTH),
+            (CELL_SIZE),
+            (CELL_SIZE),
+            (MEDIUM_BORDER_WIDTH),
             BACKGROUND_COLOR,
             BORDER_HIGHLIGHT_COLOR,
             BORDER_SHADOW_COLOR);
@@ -117,13 +117,13 @@ void Cell::drawGrid(SDL_Renderer *renderer) const {
         SDL_RenderLine(renderer,
             this->xPosition,
             this->yPosition + offset,
-            this->xPosition + Scaler::scaled(CELL_SIZE) - 1,
+            this->xPosition + (CELL_SIZE) - 1,
             this->yPosition + offset);
 
         SDL_RenderLine(renderer,
             this->xPosition + offset,
             this->yPosition,
             this->xPosition + offset,
-            this->yPosition + Scaler::scaled(CELL_SIZE) - 1);
+            this->yPosition + (CELL_SIZE) - 1);
     }
 }

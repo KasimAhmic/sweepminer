@@ -1,7 +1,6 @@
 #pragma once
 
 #include <concepts>
-#include <cstdint>
 
 template<typename T>
 concept arithmetic = std::integral<T> or std::floating_point<T>;
@@ -13,15 +12,15 @@ public:
         return static_cast<float>(value * userScale * deviceScale);
     }
 
-    [[nodiscard]] static int32_t getUserScale() { return Scaler::userScale; }
-    static void setUserScale(const int32_t value) { Scaler::userScale = value; }
+    [[nodiscard]] static float getUserScale() { return Scaler::userScale; }
+    static void setUserScale(const float value) { Scaler::userScale = value; }
 
-    [[nodiscard]] static int32_t getDeviceScale() { return Scaler::deviceScale; }
-    static void setDeviceScale(const int32_t value) { Scaler::deviceScale = value; }
+    [[nodiscard]] static float getDeviceScale() { return Scaler::deviceScale; }
+    static void setDeviceScale(const float value) { Scaler::deviceScale = value; }
 
-    [[nodiscard]] static int32_t getTotalScale();
+    [[nodiscard]] static float getTotalScale();
 
 private:
-    static int32_t userScale;
-    static int32_t deviceScale;
+    static float userScale;
+    static float deviceScale;
 };
