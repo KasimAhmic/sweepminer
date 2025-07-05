@@ -46,7 +46,7 @@ Game::Game():
     timer(std::make_unique<Timer>([this] { this->tick(); }, 1000)),
     resourceContext(std::make_shared<ResourceContext>()) {}
 
-SDL_FRect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t mines) {
+void Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t mines, const float verticalOffset) {
     this->columns = std::min(columns, MAX_COLUMNS);
     this->rows = std::min(rows, MAX_ROWS);
     this->mines = std::min(mines, MAX_MINES);
@@ -74,7 +74,7 @@ SDL_FRect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_
             cellRow.emplace_back(std::make_unique<Cell>(
                 id,
                 Scaler::scaled(col * CELL_SIZE + CELL_GRID_OFFSET_X + THICK_BORDER_WIDTH * 2),
-                Scaler::scaled(row * CELL_SIZE + CELL_GRID_OFFSET_Y + THICK_BORDER_WIDTH * 2),
+                Scaler::scaled(row * CELL_SIZE + CELL_GRID_OFFSET_Y + THICK_BORDER_WIDTH * 2) + verticalOffset,
                 col,
                 row,
                 mineCells.contains(id),
@@ -100,7 +100,7 @@ SDL_FRect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_
                     continue;
                     }
 
-                if (const Cell *cell = this->cells[newRow][newColumn].get(); cell != nullptr && cell->hasMine()) {
+                if (const Cell* cell = this->cells[newRow][newColumn].get(); cell != nullptr && cell->hasMine()) {
                     surroundingMineCount++;
                 }
             }
@@ -109,34 +109,35 @@ SDL_FRect Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_
         }
     }
 
-    return {
-        0,
-        0,
+    // TODO: My whole scaling thing is a mess. I need to go through and clean it all up.
+    this->setBoundingBox({
+        THICK_BORDER_WIDTH,
+        verticalOffset + Scaler::scaled(THICK_BORDER_WIDTH),
         static_cast<float>(columns * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SPACING * 2),
         static_cast<float>(rows * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SCOREBOARD_HEIGHT + SPACING * 3)
-    };
+    });
 }
 
-SDL_FRect Game::newGame(const Difficulty difficulty) {
+void Game::newGame(const Difficulty difficulty, const float verticalOffset) {
     switch (difficulty) {
         case Difficulty::BEGINNER:
-            return this->newGame(9, 9, 10);
+            return this->newGame(9, 9, 10, verticalOffset);
         case Difficulty::INTERMEDIATE:
-            return this->newGame(16, 16, 40);
+            return this->newGame(16, 16, 40, verticalOffset);
         case Difficulty::EXPERT:
-            return this->newGame(30, 16, 99);
+            return this->newGame(30, 16, 99, verticalOffset);
     }
 
     throw std::invalid_argument("Invalid difficulty");
 }
 
-void Game::draw(SDL_Renderer *renderer, const int32_t windowWidth, const int32_t windowHeight) const {
+void Game::draw(SDL_Renderer *renderer) const {
     SetRenderDrawColor(renderer, BACKGROUND_COLOR);
     const SDL_FRect rect = {
-        Scaler::scaled(THICK_BORDER_WIDTH),
-        Scaler::scaled(THICK_BORDER_WIDTH),
-        static_cast<float>(windowWidth) - Scaler::scaled(THICK_BORDER_WIDTH),
-        static_cast<float>(windowHeight) - Scaler::scaled(THICK_BORDER_WIDTH)
+        Scaler::scaled(this->boundingBox.x),
+        this->boundingBox.y, // TODO: Verify the appearance on high DPI displays
+        Scaler::scaled(this->boundingBox.w - THICK_BORDER_WIDTH),
+        Scaler::scaled(this->boundingBox.h - THICK_BORDER_WIDTH)
     };
     SDL_RenderFillRect(renderer, &rect);
 
@@ -216,23 +217,7 @@ void Game::handleMouseEvent() {
         return;
     }
 
-    Cell *cell = nullptr;
-
-    for (const auto &row : this->cells) {
-        for (const auto &rowCell : row) {
-            const SDL_FRect cellRegion{
-                rowCell->getXPosition(),
-                rowCell->getYPosition(),
-                Scaler::scaled(CELL_SIZE),
-                Scaler::scaled(CELL_SIZE)
-            };
-
-            if (Mouse::withinRegion(&cellRegion)) {
-                cell = rowCell.get();
-                break;
-            }
-        }
-    }
+    Cell* cell = this->getHoveredCell();
 
     if (cell == nullptr) {
         return;
@@ -275,6 +260,28 @@ void Game::handleMouseEvent() {
             cell->setState(Cell::State::HIDDEN);
         }
     }
+}
+
+Cell* Game::getHoveredCell() const {
+    Cell* cell = nullptr;
+
+    for (const auto &row : this->cells) {
+        for (const auto &rowCell : row) {
+            const SDL_FRect cellRegion{
+                rowCell->getXPosition(),
+                rowCell->getYPosition(),
+                Scaler::scaled(CELL_SIZE),
+                Scaler::scaled(CELL_SIZE)
+            };
+
+            if (Mouse::withinRegion(&cellRegion)) {
+                cell = rowCell.get();
+                break;
+            }
+        }
+    }
+
+    return cell;
 }
 
 void Game::loadResources(SDL_Renderer* renderer) const {

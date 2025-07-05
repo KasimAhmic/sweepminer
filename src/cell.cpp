@@ -18,10 +18,10 @@ Cell::Cell(const uint16_t id,
       yPosition(yPosition),
       column(column),
       row(row),
-      containsMine(containsMine),
-      resourceContext(resourceContext),
       state(State::HIDDEN),
-      surroundingMines(0) {}
+      surroundingMines(0),
+      containsMine(containsMine),
+      resourceContext(resourceContext) {}
 
 void Cell::draw(SDL_Renderer *renderer) const {
     const SDL_FRect dest{

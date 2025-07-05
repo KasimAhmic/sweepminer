@@ -27,17 +27,19 @@ public:
     Game();
     ~Game() = default;
 
-    SDL_FRect newGame(uint8_t columns, uint8_t rows, uint16_t mines);
-    SDL_FRect newGame(Difficulty difficulty);
+    void newGame(uint8_t columns, uint8_t rows, uint16_t mines, float verticalOffset);
+    void newGame(Difficulty difficulty, float verticalOffset);
 
     void loadResources(SDL_Renderer* renderer) const;
-    void draw(SDL_Renderer *renderer, int32_t windowWidth, int32_t windowHeight) const;
+    void draw(SDL_Renderer *renderer) const;
     void start();
     void end(bool victory);
     void tick();
     void revealConnectedCells(uint16_t x, uint16_t y);
     void handleMouseEvent();
 
+    [[nodiscard]] Cell* getHoveredCell() const;
+    [[nodiscard]] SDL_FRect getGameSize() const;
     [[nodiscard]] uint8_t getColumns() const { return this->columns; }
     [[nodiscard]] uint8_t getRows() const { return this->rows; }
     [[nodiscard]] uint16_t getMines() const { return this->mines; }
@@ -46,6 +48,9 @@ public:
 
     [[nodiscard]] Game::State getState() const { return this->state; }
     void setState(const Game::State state) { this->state = state; }
+
+    [[nodiscard]] SDL_FRect getBoundingBox() const { return this->boundingBox; }
+    void setBoundingBox(const SDL_FRect box) { this->boundingBox = box; }
 
 private:
     uint8_t columns;
@@ -57,6 +62,7 @@ private:
     std::vector<std::vector<std::unique_ptr<Cell>>> cells;
     std::unique_ptr<Timer> timer;
     std::shared_ptr<ResourceContext> resourceContext;
+    SDL_FRect boundingBox;
 
     SDL_FRect drawScoreboardBorder(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
     void drawFlagCounter(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;

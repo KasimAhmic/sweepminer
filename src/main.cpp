@@ -6,16 +6,23 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
 
 #include "util.hpp"
 #include "color.hpp"
+#include "debug_menu.hpp"
 #include "game.hpp"
+#include "menu_bar.hpp"
 #include "mouse.hpp"
 #include "scaler.hpp"
 
 #define UNUSED(x) (void)(x)
 
 std::unique_ptr<Game> game;
+std::unique_ptr<DebugMenu> debugMenu;
+std::unique_ptr<MenuBar> menuBar;
 
 constexpr Color WHITE(255, 255, 255, 255);
 constexpr Color BLACK(0, 0, 0, 255);
@@ -54,26 +61,38 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
         return SDL_Fail();
     }
 
-    Scaler::setUserScale(2.0f);
-    Scaler::setDeviceScale(static_cast<int32_t>(SDL_GetWindowDisplayScale(window)));
-
-    if (game) {
-        game.reset();
-    }
-
-    game = std::make_unique<Game>();
-
-    const SDL_FRect gameSize = game->newGame(Difficulty::BEGINNER);
-
-    SDL_SetWindowSize(window,
-        static_cast<int32_t>(gameSize.w) * Scaler::getUserScale(),
-        static_cast<int32_t>(gameSize.h) * Scaler::getUserScale());
-
     SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
         SDL_Log("Couldn't create renderer: %s\n", SDL_GetError());
         return SDL_Fail();
     }
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void) io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+    ImGui_ImplSDLRenderer3_Init(renderer);
+
+    Scaler::setUserScale(2.0f);
+    Scaler::setDeviceScale(static_cast<int32_t>(SDL_GetWindowDisplayScale(window)));
+
+    menuBar = std::make_unique<MenuBar>(game.get());
+    game = std::make_unique<Game>();
+    debugMenu = std::make_unique<DebugMenu>(game.get());
+
+    game->newGame(Difficulty::BEGINNER, menuBar->getHeight());
+
+    const SDL_FRect gameSize = game->getBoundingBox();
+
+    SDL_SetWindowSize(window,
+        static_cast<int32_t>(gameSize.w) * Scaler::getUserScale(),
+        static_cast<int32_t>(gameSize.h) * Scaler::getUserScale() + menuBar->getHeight());
 
     game->loadResources(renderer);
 
@@ -119,6 +138,8 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
     auto* app = static_cast<AppContext *>(appstate);
+
+    ImGui_ImplSDL3_ProcessEvent(event);
 
     if (event->type == SDL_EVENT_QUIT) {
         app->app_quit = SDL_APP_SUCCESS;
@@ -181,7 +202,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     SDL_GetWindowSize(app->window, &windowWidth, &windowHeight);
 
-    game->draw(app->renderer, windowWidth, windowHeight);
+    game->draw(app->renderer);
+    menuBar->draw(app->renderer);
+    // debugMenu->draw(app->renderer);
 
     SDL_RenderPresent(app->renderer);
 
@@ -191,7 +214,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 void SDL_AppQuit(void* appstate, const SDL_AppResult result) {
     UNUSED(result);
 
-    if (const auto* app = static_cast<AppContext *>(appstate)) {
+    if (const auto* app = static_cast<AppContext*>(appstate)) {
         SDL_DestroyRenderer(app->renderer);
         SDL_DestroyWindow(app->window);
 
@@ -201,6 +224,10 @@ void SDL_AppQuit(void* appstate, const SDL_AppResult result) {
     if (game) {
         game.reset();
     }
+
+    ImGui_ImplSDLRenderer3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
 
     TTF_Quit();
     SDL_Log("Application quit successfully!");

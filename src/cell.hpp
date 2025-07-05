@@ -40,7 +40,7 @@ public:
     [[nodiscard]] State getState() const { return this->state; }
     void setState(const Cell::State state) { this->state = state; }
 
-    void draw(SDL_Renderer *renderer) const;
+    void draw(SDL_Renderer* renderer) const;
     std::optional<std::pair<uint16_t, uint16_t>> reveal();
 
 private:

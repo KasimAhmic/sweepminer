@@ -47,8 +47,8 @@ public:
     static bool isRightClicking();
 
     static std::optional<std::pair<int32_t, int32_t>> getCellOffsets();
-    static bool withinRegion(const SDL_FRect *region);
-    static bool eventStartedWithinRegion(const SDL_FRect *region);
+    static bool withinRegion(const SDL_FRect* region);
+    static bool eventStartedWithinRegion(const SDL_FRect* region);
 
 private:
     /**
