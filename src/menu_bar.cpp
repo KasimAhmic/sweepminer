@@ -5,7 +5,7 @@
 #include "imgui_impl_sdlrenderer3.h"
 #include "scaler.hpp"
 
-MenuBar::MenuBar(Game *game): game(game), height(0) {
+MenuBar::MenuBar(Game* game): game(game), height(0) {
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
@@ -16,7 +16,7 @@ MenuBar::MenuBar(Game *game): game(game), height(0) {
     ImGui::Render();
 }
 
-void MenuBar::draw(SDL_Renderer *renderer) {
+void MenuBar::draw(SDL_Window* window, SDL_Renderer* renderer) {
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
@@ -45,16 +45,19 @@ void MenuBar::draw(SDL_Renderer *renderer) {
 
         if (ImGui::BeginMenu("View")) {
             if (ImGui::BeginMenu("Scale")) {
+                const float deviceScale = SDL_GetWindowDisplayScale(window);
+
+                // TODO: Figure out how to handle window resizing
                 if (ImGui::MenuItem("Small")) {
-                    Scaler::setUserScale(1.0f);
+                    SDL_SetRenderScale(renderer, deviceScale, deviceScale);
                 }
 
                 if (ImGui::MenuItem("Medium")) {
-                    Scaler::setUserScale(2.0f);
+                    SDL_SetRenderScale(renderer, deviceScale * 2.0f, deviceScale * 2.0f);
                 }
 
                 if (ImGui::MenuItem("Large")) {
-                    Scaler::setUserScale(3.0f);
+                    SDL_SetRenderScale(renderer, deviceScale * 3.0f, deviceScale * 3.0f);
                 }
 
                 ImGui::EndMenu();

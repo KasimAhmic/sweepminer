@@ -8,7 +8,7 @@ class MenuBar {
 public:
     explicit MenuBar(Game* game);
 
-    void draw(SDL_Renderer* renderer);
+    void draw(SDL_Window* window, SDL_Renderer* renderer);
 
     [[nodiscard]] float getHeight() const { return this->height; }
     void setHeight(const float height) { this->height = height; }

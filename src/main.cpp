@@ -16,7 +16,6 @@
 #include "game.hpp"
 #include "menu_bar.hpp"
 #include "mouse.hpp"
-#include "scaler.hpp"
 
 #define UNUSED(x) (void)(x)
 
@@ -74,40 +73,31 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
 
-    ImGui::StyleColorsDark();
+    ImGui::StyleColorsLight();
+
+    // ImGuiStyle& style = ImGui::GetStyle();
+    // style.ScaleAllSizes(SDL_GetWindowDisplayScale(window));
+    // style.FontScaleDpi = SDL_GetWindowDisplayScale(window);
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
 
-    Scaler::setUserScale(2.0f);
-    Scaler::setDeviceScale(SDL_GetWindowDisplayScale(window));
+    const float scale = SDL_GetWindowDisplayScale(window);
 
-    menuBar = std::make_unique<MenuBar>(game.get());
     game = std::make_unique<Game>();
+    menuBar = std::make_unique<MenuBar>(game.get());
     debugMenu = std::make_unique<DebugMenu>(game.get());
 
     game->newGame(Difficulty::BEGINNER, menuBar->getHeight());
 
     const SDL_FRect gameSize = game->getBoundingBox();
+    SDL_SetRenderScale(renderer, scale, scale);
 
     SDL_SetWindowSize(window,
         static_cast<int32_t>(gameSize.w),
         static_cast<int32_t>(gameSize.h + menuBar->getHeight()));
 
     game->loadResources(renderer);
-
-    // TODO: Am I really gonna use this?
-    // load the font
-#if __ANDROID__
-    std::filesystem::path basePath = "";   // on Android we do not want to use basepath. Instead, assets are available at the root directory.
-#else
-    const char *basePathPtr = SDL_GetBasePath();
-
-     if (!basePathPtr){
-        return SDL_Fail();
-    }
-     const std::filesystem::path basePath = basePathPtr;
-#endif
 
     // print some information about the window
     SDL_ShowWindow(window);
@@ -203,7 +193,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_GetWindowSize(app->window, &windowWidth, &windowHeight);
 
     game->draw(app->renderer);
-    menuBar->draw(app->renderer);
+    menuBar->draw(app->window, app->renderer);
     // debugMenu->draw(app->renderer);
 
     SDL_RenderPresent(app->renderer);
