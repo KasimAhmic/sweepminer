@@ -193,7 +193,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_GetWindowSize(app->window, &windowWidth, &windowHeight);
 
     game->draw(app->renderer);
-    menuBar->draw(app->window, app->renderer);
+    menuBar->draw(app->renderer);
     // debugMenu->draw(app->renderer);
 
     SDL_RenderPresent(app->renderer);
