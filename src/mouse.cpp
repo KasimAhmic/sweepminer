@@ -6,10 +6,10 @@ MouseState Mouse::state;
 MouseEvent Mouse::event;
 MouseButton Mouse::button;
 
-void Mouse::setButton(const uint8_t newButton) {
-    if (newButton == SDL_BUTTON_LEFT) {
+void Mouse::setButton(const uint8_t button) {
+    if (button == SDL_BUTTON_LEFT) {
         Mouse::button = MouseButton::LEFT;
-    } else if (newButton == SDL_BUTTON_RIGHT) {
+    } else if (button == SDL_BUTTON_RIGHT) {
         Mouse::button = MouseButton::RIGHT;
     }
 }
@@ -17,15 +17,15 @@ void Mouse::setButton(const uint8_t newButton) {
 bool Mouse::withinRegion(const SDL_FRect *region) {
     const auto [mouseX, mouseY] = Mouse::getPosition();
 
-    return (static_cast<float>(mouseX) >= region->x && static_cast<float>(mouseX) <= region->x + region->w &&
-            static_cast<float>(mouseY) >= region->y && static_cast<float>(mouseY) <= region->y + region->h);
+    return static_cast<float>(mouseX) >= region->x && static_cast<float>(mouseX) <= region->x + region->w &&
+        static_cast<float>(mouseY) >= region->y && static_cast<float>(mouseY) <= region->y + region->h;
 }
 
 bool Mouse::eventStartedWithinRegion(const SDL_FRect *region) {
     const auto [mouseX, mouseY] = Mouse::getEventPosition();
 
-    return (static_cast<float>(mouseX) >= region->x && static_cast<float>(mouseX) <= region->x + region->w &&
-            static_cast<float>(mouseY) >= region->y && static_cast<float>(mouseY) <= region->y + region->h);
+    return static_cast<float>(mouseX) >= region->x && static_cast<float>(mouseX) <= region->x + region->w &&
+        static_cast<float>(mouseY) >= region->y && static_cast<float>(mouseY) <= region->y + region->h;
 }
 
 bool Mouse::isLeftClicking() {
@@ -34,4 +34,8 @@ bool Mouse::isLeftClicking() {
 
 bool Mouse::isRightClicking() {
     return Mouse::getButton() == MouseButton::RIGHT && Mouse::getState() == MouseState::DOWN;
+}
+
+bool Mouse::isHoveringImGuiWindow() {
+    return ImGui::IsAnyItemHovered() || ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 }

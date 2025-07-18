@@ -1,11 +1,9 @@
 #pragma once
 
-#include <optional>
 #include <utility>
+#include <imgui.h>
 
 #include "cell.hpp"
-#include "constants.hpp"
-#include "scaler.hpp"
 
 enum class MouseState {
     UP,
@@ -46,9 +44,9 @@ public:
     static bool isLeftClicking();
     static bool isRightClicking();
 
-    static std::optional<std::pair<int32_t, int32_t>> getCellOffsets();
     static bool withinRegion(const SDL_FRect* region);
     static bool eventStartedWithinRegion(const SDL_FRect* region);
+    static bool isHoveringImGuiWindow();
 
 private:
     /**

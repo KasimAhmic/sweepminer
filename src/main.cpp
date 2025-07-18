@@ -26,12 +26,6 @@ std::unique_ptr<MenuBar> menuBar;
 constexpr Color WHITE(255, 255, 255, 255);
 constexpr Color BLACK(0, 0, 0, 255);
 
-struct AppContext {
-    SDL_Window* window{};
-    SDL_Renderer* renderer{};
-    SDL_AppResult app_quit = SDL_APP_CONTINUE;
-};
-
 SDL_AppResult SDL_Fail(){
     SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
     return SDL_APP_FAILURE;
@@ -41,7 +35,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     UNUSED(argc);
     UNUSED(argv);
 
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC)) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC)) {
         SDL_Log("Couldn't initialize SDL: %s\n", SDL_GetError());
         return SDL_Fail();
     }
@@ -83,21 +77,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     ImGui_ImplSDLRenderer3_Init(renderer);
 
     const float scale = SDL_GetWindowDisplayScale(window);
-
-    game = std::make_unique<Game>();
-    menuBar = std::make_unique<MenuBar>(game.get());
-    debugMenu = std::make_unique<DebugMenu>(game.get());
-
-    game->newGame(Difficulty::BEGINNER, menuBar->getHeight());
-
-    const SDL_FRect gameSize = game->getBoundingBox();
-    SDL_SetRenderScale(renderer, scale, scale);
-
-    SDL_SetWindowSize(window,
-        static_cast<int32_t>(gameSize.w),
-        static_cast<int32_t>(gameSize.h + menuBar->getHeight()));
-
-    game->loadResources(renderer);
+    SDL_Log("%f", scale);
 
     // print some information about the window
     SDL_ShowWindow(window);
@@ -119,9 +99,22 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
        .renderer = renderer,
     };
 
+    // pointers are pain, no clue wtf is going on here
+    AppContext context = *static_cast<AppContext *>(*appstate);
+
     SDL_SetRenderVSync(renderer, 1);
 
     SDL_Log("Application started successfully!");
+
+    game = std::make_unique<Game>(context);
+    menuBar = std::make_unique<MenuBar>(game.get());
+    debugMenu = std::make_unique<DebugMenu>(game.get());
+
+    game->newGame(Difficulty::BEGINNER, menuBar->getHeight());
+
+    SDL_SetRenderScale(renderer, scale, scale);
+
+    game->loadResources(renderer);
 
     return SDL_APP_CONTINUE;
 }
@@ -137,20 +130,28 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
 
     switch (event->type) {
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-            Mouse::setButton(event->button.button);
-            Mouse::setEvent(MouseEvent::BUTTON_DOWN);
-            Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
-            Mouse::setState(MouseState::DOWN);
-            game->handleMouseEvent();
+            if (!Mouse::isHoveringImGuiWindow()) {
+                Mouse::setButton(event->button.button);
+                Mouse::setEvent(MouseEvent::BUTTON_DOWN);
+                Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
+                Mouse::setState(MouseState::DOWN);
+
+                game->handleMouseEvent();
+            }
+
             break;
         }
 
         case SDL_EVENT_MOUSE_BUTTON_UP: {
-            Mouse::setButton(event->button.button);
-            Mouse::setEvent(MouseEvent::BUTTON_UP);
-            Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
-            Mouse::setState(MouseState::UP);
-            game->handleMouseEvent();
+            if (!Mouse::isHoveringImGuiWindow()) {
+                Mouse::setButton(event->button.button);
+                Mouse::setEvent(MouseEvent::BUTTON_UP);
+                Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
+                Mouse::setState(MouseState::UP);
+
+                game->handleMouseEvent();
+            }
+
             break;
         }
 

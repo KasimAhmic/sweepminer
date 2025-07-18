@@ -3,17 +3,18 @@
 #include "game.hpp"
 #include "constants.hpp"
 #include "mouse.hpp"
-#include "scaler.hpp"
 #include "textures.hpp"
 
-Cell::Cell(const uint16_t id,
-           const float xPosition,
-           const float yPosition,
-           const uint8_t column,
-           const uint8_t row,
-           const bool containsMine,
-           const std::shared_ptr<ResourceContext> &resourceContext)
-    : id(id),
+Cell::Cell(const AppContext &context,
+        const uint16_t id,
+        const float xPosition,
+        const float yPosition,
+        const uint8_t column,
+        const uint8_t row,
+        const bool containsMine,
+        const std::shared_ptr<ResourceContext> &resourceContext)
+    : context(context),
+      id(id),
       xPosition(xPosition),
       yPosition(yPosition),
       column(column),
@@ -47,9 +48,9 @@ void Cell::draw(SDL_Renderer *renderer) const {
         DrawBox(renderer,
             dest.x,
             dest.y,
-            (CELL_SIZE),
-            (CELL_SIZE),
-            (MEDIUM_BORDER_WIDTH),
+            CELL_SIZE,
+            CELL_SIZE,
+            MEDIUM_BORDER_WIDTH,
             BACKGROUND_COLOR,
             BORDER_HIGHLIGHT_COLOR,
             BORDER_SHADOW_COLOR);
@@ -111,7 +112,11 @@ std::optional<std::pair<uint16_t, uint16_t>> Cell::reveal() {
 void Cell::drawGrid(SDL_Renderer *renderer) const {
     SetRenderDrawColor(renderer, BORDER_SHADOW_COLOR);
 
-    for (int32_t i = 0; i < Scaler::getTotalScale(); i++) {
+    float scaleX, scaleY;
+
+    SDL_GetRenderScale(this->context.renderer, &scaleX, &scaleY);
+
+    for (int32_t i = 0; i < static_cast<int32_t>(scaleX); i++) {
         const auto offset = static_cast<float>(i);
 
         SDL_RenderLine(renderer,

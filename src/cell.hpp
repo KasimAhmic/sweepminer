@@ -4,6 +4,7 @@
 
 #include <SDL3/SDL.h>
 
+#include "context.hpp"
 #include "resource_context.hpp"
 
 class Game; // Forward declaration
@@ -17,7 +18,8 @@ public:
         REVEALED,
     };
 
-    Cell(uint16_t id,
+    Cell(const AppContext &context,
+        uint16_t id,
         float xPosition,
         float yPosition,
         uint8_t column,
@@ -44,6 +46,7 @@ public:
     std::optional<std::pair<uint16_t, uint16_t>> reveal();
 
 private:
+    AppContext context;
     uint16_t id;
     float xPosition;
     float yPosition;

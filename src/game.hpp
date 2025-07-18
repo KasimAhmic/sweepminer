@@ -24,7 +24,7 @@ public:
         DEFEAT,
     };
 
-    Game();
+    explicit Game(const AppContext &context);
     ~Game() = default;
 
     void newGame(uint8_t columns, uint8_t rows, uint16_t mines, float verticalOffset);
@@ -37,6 +37,7 @@ public:
     void tick();
     void revealConnectedCells(uint16_t x, uint16_t y);
     void handleMouseEvent();
+    void openHighScoreWindow();
 
     [[nodiscard]] Cell* getHoveredCell() const;
     [[nodiscard]] SDL_FRect getGameSize() const;
@@ -53,6 +54,7 @@ public:
     void setBoundingBox(const SDL_FRect box) { this->boundingBox = box; }
 
 private:
+    AppContext context;
     uint8_t columns;
     uint8_t rows;
     uint16_t mines;
@@ -62,7 +64,7 @@ private:
     std::vector<std::vector<std::unique_ptr<Cell>>> cells;
     std::unique_ptr<Timer> timer;
     std::shared_ptr<ResourceContext> resourceContext;
-    SDL_FRect boundingBox;
+    SDL_FRect boundingBox{};
 
     SDL_FRect drawScoreboardBorder(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
     void drawFlagCounter(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;

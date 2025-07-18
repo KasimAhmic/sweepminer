@@ -9,7 +9,8 @@
 #include "mouse.hpp"
 #include "pair_hash.hpp"
 #include "constants.hpp"
-#include "scaler.hpp"
+#include "imgui_impl_sdl3.h"
+#include "imgui_impl_sdlrenderer3.h"
 #include "textures.hpp"
 
 typedef std::pair<int32_t, int32_t> Offset;
@@ -36,7 +37,8 @@ constexpr std::array FOUR_DIR_CELL_OFFSETS = {
     EAST,
 };
 
-Game::Game():
+Game::Game(const AppContext &context):
+    context(context),
     columns(0),
     rows(0),
     mines(0),
@@ -47,6 +49,8 @@ Game::Game():
     resourceContext(std::make_shared<ResourceContext>()) {}
 
 void Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t mines, const float verticalOffset) {
+    this->timer->stop();
+
     this->columns = std::min(columns, MAX_COLUMNS);
     this->rows = std::min(rows, MAX_ROWS);
     this->mines = std::min(mines, MAX_MINES);
@@ -67,14 +71,17 @@ void Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t min
         mineCells.insert(distribution(gen));
     }
 
+    this->cells.clear();
+
     for (uint8_t row = 0; row < this->rows; row++) {
         std::vector<std::unique_ptr<Cell>> cellRow;
 
         for (uint8_t col = 0; col < this->columns; col++) {
             cellRow.emplace_back(std::make_unique<Cell>(
+                this->context,
                 id,
-                (col * CELL_SIZE + CELL_GRID_OFFSET_X + THICK_BORDER_WIDTH * 2),
-                (row * CELL_SIZE + CELL_GRID_OFFSET_Y + THICK_BORDER_WIDTH * 2) + verticalOffset,
+                static_cast<float>(col * CELL_SIZE + CELL_GRID_OFFSET_X + THICK_BORDER_WIDTH * 2),
+                static_cast<float>(row * CELL_SIZE + CELL_GRID_OFFSET_Y + THICK_BORDER_WIDTH * 2) + verticalOffset,
                 col,
                 row,
                 mineCells.contains(id),
@@ -109,13 +116,16 @@ void Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t min
         }
     }
 
-    // TODO: My whole scaling thing is a mess. I need to go through and clean it all up.
     this->setBoundingBox({
         THICK_BORDER_WIDTH,
-        verticalOffset + (THICK_BORDER_WIDTH),
+        verticalOffset + THICK_BORDER_WIDTH,
         static_cast<float>(columns * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SPACING * 2),
         static_cast<float>(rows * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SCOREBOARD_HEIGHT + SPACING * 3)
     });
+
+    SDL_SetWindowSize(this->context.window,
+        static_cast<int32_t>(this->getBoundingBox().w),
+        static_cast<int32_t>(this->getBoundingBox().h + verticalOffset));
 }
 
 void Game::newGame(const Difficulty difficulty, const float verticalOffset) {
@@ -148,9 +158,9 @@ void Game::draw(SDL_Renderer *renderer) const {
 
     const SDL_FRect cellGridBoundingBox{
         scoreboardBoundingBox.x,
-        scoreboardBoundingBox.y + scoreboardBoundingBox.h + (SPACING),
-        static_cast<float>(this->columns) * (CELL_SIZE) + (THICK_BORDER_WIDTH * 2),
-        static_cast<float>(this->rows) * (CELL_SIZE) + (THICK_BORDER_WIDTH * 2),
+        scoreboardBoundingBox.y + scoreboardBoundingBox.h + SPACING,
+        static_cast<float>(this->columns) * CELL_SIZE + THICK_BORDER_WIDTH * 2,
+        static_cast<float>(this->rows) * CELL_SIZE + THICK_BORDER_WIDTH * 2,
     };
 
     this->drawCellGrid(renderer, &cellGridBoundingBox);
@@ -235,6 +245,26 @@ void Game::handleMouseEvent() {
 
         this->revealConnectedCells(clickedCell->first, clickedCell->second);
 
+        int32_t revealedCells = 0;
+        int32_t flaggedMines = 0;
+
+        for (const auto &row : this->cells) {
+            for (const auto &rowCell : row) {
+                if (rowCell->getState() == Cell::State::FLAGGED && rowCell->hasMine()) {
+                    flaggedMines++;
+                }
+
+                if (rowCell->getState() == Cell::State::REVEALED) {
+                    revealedCells++;
+                }
+            }
+        }
+
+        if (this->getColumns() * this->getRows() - revealedCells == flaggedMines) {
+            this->setState(Game::State::VICTORY);
+            this->end(true);
+        }
+
         return;
     }
 
@@ -262,6 +292,27 @@ void Game::handleMouseEvent() {
     }
 }
 
+void Game::openHighScoreWindow() {
+    SDL_Window* window = SDL_CreateWindow("High Scores", 400, 300, SDL_WINDOW_MODAL);
+
+    if (!window) {
+        SDL_Log("Couldn't create window: %s\n", SDL_GetError());
+        return;
+    }
+
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
+    if (!renderer) {
+        SDL_Log("Couldn't create renderer: %s\n", SDL_GetError());
+        return;
+    }
+
+    ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+    ImGui_ImplSDLRenderer3_Init(renderer);
+    SDL_SetRenderVSync(renderer, 1);
+
+    SDL_ShowWindow(window);
+}
+
 Cell* Game::getHoveredCell() const {
     Cell* cell = nullptr;
 
@@ -270,8 +321,8 @@ Cell* Game::getHoveredCell() const {
             const SDL_FRect cellRegion{
                 rowCell->getXPosition(),
                 rowCell->getYPosition(),
-                (CELL_SIZE),
-                (CELL_SIZE)
+                CELL_SIZE,
+                CELL_SIZE
             };
 
             if (Mouse::withinRegion(&cellRegion)) {
@@ -305,10 +356,10 @@ SDL_Texture* Game::loadTexture(SDL_Renderer* renderer, const std::string& path) 
 
 SDL_FRect Game::drawScoreboardBorder(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const {
     const SDL_FRect scoreboardBoundingBox{
-        boundingBox->x + (SPACING),
-        boundingBox->y + (SPACING),
-        boundingBox->w - (SPACING * 2),
-        (SCOREBOARD_HEIGHT)
+        boundingBox->x + SPACING,
+        boundingBox->y + SPACING,
+        boundingBox->w - SPACING * 2,
+        SCOREBOARD_HEIGHT
     };
 
     DrawBox(renderer,
@@ -316,7 +367,7 @@ SDL_FRect Game::drawScoreboardBorder(SDL_Renderer *renderer, const SDL_FRect *bo
         scoreboardBoundingBox.y,
         scoreboardBoundingBox.w,
         scoreboardBoundingBox.h,
-        (MEDIUM_BORDER_WIDTH),
+        MEDIUM_BORDER_WIDTH,
         BACKGROUND_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
@@ -328,11 +379,11 @@ void Game::drawFlagCounter(SDL_Renderer *renderer, const SDL_FRect *boundingBox)
     SDL_Texture* texture = this->resourceContext->get(Texture::NUMBERS);
 
     DrawBox(renderer,
-        boundingBox->x + (DISPLAY_OFFSET_X),
-        boundingBox->y + (DISPLAY_OFFSET_Y),
-        (DISPLAY_WIDTH),
-        (DISPLAY_HEIGHT),
-        (THIN_BORDER_WIDTH),
+        boundingBox->x + DISPLAY_OFFSET_X,
+        boundingBox->y + DISPLAY_OFFSET_Y,
+        DISPLAY_WIDTH,
+        DISPLAY_HEIGHT,
+        THIN_BORDER_WIDTH,
         BACKGROUND_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
@@ -340,13 +391,13 @@ void Game::drawFlagCounter(SDL_Renderer *renderer, const SDL_FRect *boundingBox)
     const std::array<uint8_t, 3> flagDigits = Game::getDisplayDigits(this->flags);
 
     for (uint8_t i = 0; i < 3; i++) {
-        const float segmentOffset = static_cast<float>(i) * (SEGMENT_WIDTH);
+        const float segmentOffset = static_cast<float>(i) * SEGMENT_WIDTH;
 
         const SDL_FRect dest{
-            boundingBox->x + (DISPLAY_OFFSET_X + THIN_BORDER_WIDTH) + segmentOffset,
-            boundingBox->y + (DISPLAY_OFFSET_Y + THIN_BORDER_WIDTH),
-            (SEGMENT_WIDTH),
-            (SEGMENT_HEIGHT)
+            boundingBox->x + DISPLAY_OFFSET_X + THIN_BORDER_WIDTH + segmentOffset,
+            boundingBox->y + DISPLAY_OFFSET_Y + THIN_BORDER_WIDTH,
+            SEGMENT_WIDTH,
+            SEGMENT_HEIGHT
         };
 
         SDL_RenderTexture(renderer, texture, TextureOffset::getNumberTextureOffset(flagDigits.at(i)), &dest);
@@ -357,19 +408,19 @@ void Game::drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) cons
     SDL_Texture* texture = this->resourceContext->get(Texture::SMILEY);
 
     const SDL_FRect button{
-        boundingBox->w / 2 + boundingBox->x - (BUTTON_WIDTH) / 2,
-        boundingBox->h / 2 + boundingBox->y - (BUTTON_HEIGHT) / 2,
-        (BUTTON_WIDTH),
-        (BUTTON_HEIGHT)
+        boundingBox->w / 2 + boundingBox->x - static_cast<float>(BUTTON_WIDTH) / 2,
+        boundingBox->h / 2 + boundingBox->y - static_cast<float>(BUTTON_HEIGHT) / 2,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
     };
 
     // Top left border
     DrawBox(renderer,
-        button.x - (THIN_BORDER_WIDTH),
-        button.y - (THIN_BORDER_WIDTH),
-        button.w + (THIN_BORDER_WIDTH),
-        button.h + (THIN_BORDER_WIDTH),
-        (THIN_BORDER_WIDTH),
+        button.x - THIN_BORDER_WIDTH,
+        button.y - THIN_BORDER_WIDTH,
+        button.w + THIN_BORDER_WIDTH,
+        button.h + THIN_BORDER_WIDTH,
+        THIN_BORDER_WIDTH,
         BORDER_SHADOW_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_SHADOW_COLOR);
@@ -378,9 +429,9 @@ void Game::drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) cons
     DrawBox(renderer,
         button.x,
         button.y,
-        button.w + (THIN_BORDER_WIDTH),
-        button.h + (THIN_BORDER_WIDTH),
-        (THIN_BORDER_WIDTH),
+        button.w + THIN_BORDER_WIDTH,
+        button.h + THIN_BORDER_WIDTH,
+        THIN_BORDER_WIDTH,
         BORDER_SHADOW_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_SHADOW_COLOR);
@@ -393,17 +444,17 @@ void Game::drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) cons
         button.y,
         button.w,
         button.h,
-        isPressed ? (THIN_BORDER_WIDTH) : (MEDIUM_BORDER_WIDTH),
+        isPressed ? THIN_BORDER_WIDTH : MEDIUM_BORDER_WIDTH,
         BACKGROUND_COLOR,
         isPressed ? BORDER_SHADOW_COLOR : BORDER_HIGHLIGHT_COLOR,
         isPressed ? BACKGROUND_COLOR : BORDER_SHADOW_COLOR);
 
     // TODO: This is not quite right, fix it later
-    const float smileyOffset = isPressed ? (THIN_BORDER_WIDTH) : 0.0f;
+    const float smileyOffset = isPressed ? THIN_BORDER_WIDTH : 0.0f;
 
     const SDL_FRect smiley{
-        button.x + (THIN_BORDER_WIDTH) + smileyOffset,
-        button.y + (THIN_BORDER_WIDTH) + smileyOffset,
+        button.x + THIN_BORDER_WIDTH + smileyOffset,
+        button.y + THIN_BORDER_WIDTH + smileyOffset,
         (TextureOffset::SMILEY_DEFAULT.w),
         (TextureOffset::SMILEY_DEFAULT.h)
     };
@@ -434,10 +485,10 @@ void Game::drawTimer(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const
 
     DrawBox(renderer,
         boundingBox->x + boundingBox->w - (DISPLAY_WIDTH + DISPLAY_OFFSET_X),
-        boundingBox->y + (DISPLAY_OFFSET_Y),
-        (DISPLAY_WIDTH),
-        (DISPLAY_HEIGHT),
-        (THIN_BORDER_WIDTH),
+        boundingBox->y + DISPLAY_OFFSET_Y,
+        DISPLAY_WIDTH,
+        DISPLAY_HEIGHT,
+        THIN_BORDER_WIDTH,
         BACKGROUND_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);
@@ -445,13 +496,13 @@ void Game::drawTimer(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const
     const std::array<uint8_t, 3> clockDigits = Game::getDisplayDigits(this->clock);
 
     for (uint8_t i = 0; i < 3; i++) {
-        const float segmentOffset = static_cast<float>(i) * (SEGMENT_WIDTH);
+        const float segmentOffset = static_cast<float>(i) * SEGMENT_WIDTH;
 
         const SDL_FRect dest{
             boundingBox->x + boundingBox->w - (DISPLAY_WIDTH + DISPLAY_OFFSET_X - THIN_BORDER_WIDTH) + segmentOffset,
             boundingBox->y + (DISPLAY_OFFSET_Y + THIN_BORDER_WIDTH),
-            (SEGMENT_WIDTH),
-            (SEGMENT_HEIGHT)
+            SEGMENT_WIDTH,
+            SEGMENT_HEIGHT
         };
 
         SDL_RenderTexture(renderer, texture, TextureOffset::getNumberTextureOffset(clockDigits.at(i)), &dest);
@@ -465,7 +516,7 @@ void Game::drawCellGrid(SDL_Renderer *renderer, const SDL_FRect *boundingBox) co
         boundingBox->y,
         boundingBox->w,
         boundingBox->h,
-        (THICK_BORDER_WIDTH),
+        THICK_BORDER_WIDTH,
         BACKGROUND_COLOR,
         BORDER_SHADOW_COLOR,
         BORDER_HIGHLIGHT_COLOR);

@@ -17,20 +17,23 @@ void Timer::start() {
     this->running.store(true);
 
     this->worker = std::thread([this] {
+        std::unique_lock lock(this->mutex);
+
         while (this->running.load()) {
-            const auto delta = std::chrono::steady_clock::now() + std::chrono::milliseconds(this->interval);
+            this->trigger.wait_for(lock, std::chrono::milliseconds(this->interval), [this] {
+                return !this->running.load();
+            });
+
             this->callback();
-            std::this_thread::sleep_until(delta);
         }
     });
 }
 
-// TODO: Since this is a synchronous stop, it'll block the main thread up to `interval` milliseconds.
-// TODO: Fix this later
 void Timer::stop() {
     this->running.store(false);
+    this->trigger.notify_all();
 
     if (this->worker.joinable()) {
-        worker.join();
+        this->worker.join();
     }
 }

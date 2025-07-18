@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <thread>
+#include <condition_variable>
 
 class Timer {
 public:
@@ -16,4 +17,6 @@ private:
     uint32_t interval;
     std::atomic<bool> running;
     std::thread worker;
+    std::condition_variable trigger;
+    std::mutex mutex;
 };
