@@ -109,6 +109,7 @@ void MenuBar::handleExternalLink(const char* label, const char* url) {
 
 void MenuBar::handleExit() {
     if (ImGui::MenuItem("Exit...")) {
-        SDL_Quit();
+        SDL_Event event{ .type = SDL_EVENT_QUIT };
+        SDL_PushEvent(&event);
     }
 }

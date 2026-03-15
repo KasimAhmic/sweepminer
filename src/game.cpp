@@ -1,16 +1,17 @@
 #include <random>
 #include <unordered_set>
 #include <queue>
+#include <array>
 
-#include "SDL3_image/SDL_image.h"
+#include <SDL3_image/SDL_image.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
 
 #include "game.hpp"
 #include "util.hpp"
 #include "mouse.hpp"
 #include "pair_hash.hpp"
 #include "constants.hpp"
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_sdlrenderer3.h"
 #include "textures.hpp"
 
 typedef std::pair<int32_t, int32_t> Offset;
@@ -211,6 +212,7 @@ void Game::revealConnectedCells(uint16_t x, uint16_t y) {
         }
 
         cell->setState(Cell::State::REVEALED);
+        this->playSoundEffect(SoundEffect::CLICKED);
 
         if (cell->getSurroundingMines() > 0) {
             continue;
@@ -240,6 +242,7 @@ void Game::handleMouseEvent() {
 
         if (clickedCell == std::nullopt) {
             this->end(false);
+            this->playSoundEffect(SoundEffect::EXPLODED);
             return;
         }
 
@@ -276,20 +279,28 @@ void Game::handleMouseEvent() {
 
         if (cell->getState() == Cell::State::HIDDEN && this->flags > 0) {
             cell->setState(Cell::State::FLAGGED);
+            this->playSoundEffect(SoundEffect::FLAGGED);
             this->flags--;
             return;
         }
 
         if (cell->getState() == Cell::State::FLAGGED) {
             cell->setState(Cell::State::QUESTIONED);
+            this->playSoundEffect(SoundEffect::FLAGGED);
             this->flags++;
             return;
         }
 
         if (cell->getState() == Cell::State::QUESTIONED) {
             cell->setState(Cell::State::HIDDEN);
+            this->playSoundEffect(SoundEffect::FLAGGED);
         }
     }
+}
+
+void Game::playSoundEffect(SoundEffect soundEffect) const {
+    MIX_SetTrackAudio(this->context.audioTrack, this->resourceContext->get(soundEffect));
+    MIX_PlayTrack(this->context.audioTrack, 0);
 }
 
 void Game::openHighScoreWindow() {
@@ -335,14 +346,17 @@ Cell* Game::getHoveredCell() const {
     return cell;
 }
 
-void Game::loadResources(SDL_Renderer* renderer) const {
-    this->resourceContext->add(Texture::CELL, Game::loadTexture(renderer, "assets/images/cell.png"));
-    this->resourceContext->add(Texture::NUMBERS, Game::loadTexture(renderer, "assets/images/numbers.png"));
-    this->resourceContext->add(Texture::SMILEY, Game::loadTexture(renderer, "assets/images/smiley.png"));
+void Game::loadResources(AppContext* appContext) const {
+    this->resourceContext->add(Texture::CELL, Game::loadTexture(appContext, "assets/images/cell.png"));
+    this->resourceContext->add(Texture::NUMBERS, Game::loadTexture(appContext, "assets/images/numbers.png"));
+    this->resourceContext->add(Texture::SMILEY, Game::loadTexture(appContext, "assets/images/smiley.png"));
+    this->resourceContext->add(SoundEffect::CLICKED, Game::loadAudio(appContext, "assets/sounds/click.wav"));
+    this->resourceContext->add(SoundEffect::FLAGGED, Game::loadAudio(appContext, "assets/sounds/flag.wav"));
+    this->resourceContext->add(SoundEffect::EXPLODED, Game::loadAudio(appContext, "assets/sounds/explosion.wav"));
 }
 
-SDL_Texture* Game::loadTexture(SDL_Renderer* renderer, const std::string& path) {
-    SDL_Texture* texture = IMG_LoadTexture(renderer, path.c_str());
+SDL_Texture* Game::loadTexture(const AppContext* appContext, const std::string& path) {
+    SDL_Texture* texture = IMG_LoadTexture(appContext->renderer, path.c_str());
 
     if (!texture) {
         SDL_Log("Failed to load texture %s: %s\n", path.c_str(), SDL_GetError());
@@ -352,6 +366,17 @@ SDL_Texture* Game::loadTexture(SDL_Renderer* renderer, const std::string& path) 
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 
     return texture;
+}
+
+MIX_Audio* Game::loadAudio(const AppContext* appContext, const std::string& path) {
+    MIX_Audio* audio = MIX_LoadAudio(appContext->mixer, path.c_str(), false);
+
+    if (!audio) {
+        SDL_Log("Failed to load audio %s: %s\n", path.c_str(), SDL_GetError());
+        return nullptr;
+    }
+
+    return audio;
 }
 
 SDL_FRect Game::drawScoreboardBorder(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const {

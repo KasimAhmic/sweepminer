@@ -30,13 +30,14 @@ public:
     void newGame(uint8_t columns, uint8_t rows, uint16_t mines, float verticalOffset);
     void newGame(Difficulty difficulty, float verticalOffset);
 
-    void loadResources(SDL_Renderer* renderer) const;
+    void loadResources(AppContext* appContext) const;
     void draw(SDL_Renderer *renderer) const;
     void start();
     void end(bool victory);
     void tick();
     void revealConnectedCells(uint16_t x, uint16_t y);
     void handleMouseEvent();
+    void playSoundEffect(SoundEffect soundEffect) const;
     void openHighScoreWindow();
 
     [[nodiscard]] Cell* getHoveredCell() const;
@@ -72,6 +73,7 @@ private:
     void drawTimer(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
     void drawCellGrid(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;
 
-    static SDL_Texture* loadTexture(SDL_Renderer* renderer, const std::string& path);
+    static SDL_Texture* loadTexture(const AppContext* appContext, const std::string& path);
+    static MIX_Audio* loadAudio(const AppContext* appContext, const std::string& path);
     [[nodiscard]] static std::array<uint8_t, 3> getDisplayDigits(uint16_t value);
 };

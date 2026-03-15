@@ -6,6 +6,7 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <SDL3_mixer/SDL_mixer.h>
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
@@ -35,7 +36,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     UNUSED(argc);
     UNUSED(argv);
 
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC)) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s\n", SDL_GetError());
         return SDL_Fail();
     }
@@ -45,10 +46,14 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
         return SDL_Fail();
     }
 
+    if (!MIX_Init()) {
+        SDL_Log("Couldn't initialise SDL_mixer: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
+
     SDL_Log("base path: %s", SDL_GetBasePath());
 
     SDL_Window* window = SDL_CreateWindow("SweepMiner", 0, 0, SDL_WINDOW_HIGH_PIXEL_DENSITY);
-
     if (!window) {
         SDL_Log("Couldn't create window: %s\n", SDL_GetError());
         return SDL_Fail();
@@ -57,6 +62,18 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
         SDL_Log("Couldn't create renderer: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
+
+    MIX_Mixer* mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+    if (!mixer) {
+        SDL_Log("Couldn't create mixer: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
+
+    MIX_Track* audioTrack = MIX_CreateTrack(mixer);
+    if (!audioTrack) {
+        SDL_Log("Couldn't create audio track: %s\n", SDL_GetError());
         return SDL_Fail();
     }
 
@@ -95,8 +112,10 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     }
 
     *appstate = new AppContext{
-       .window = window,
-       .renderer = renderer,
+        .window = window,
+        .renderer = renderer,
+        .mixer = mixer,
+        .audioTrack = audioTrack,
     };
 
     // pointers are pain, no clue wtf is going on here
@@ -114,7 +133,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
 
     SDL_SetRenderScale(renderer, scale, scale);
 
-    game->loadResources(renderer);
+    game->loadResources(&context);
 
     return SDL_APP_CONTINUE;
 }
@@ -125,7 +144,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
     ImGui_ImplSDL3_ProcessEvent(event);
 
     if (event->type == SDL_EVENT_QUIT) {
-        app->app_quit = SDL_APP_SUCCESS;
+        app->appQuit = SDL_APP_SUCCESS;
+        return app->appQuit;
     }
 
     switch (event->type) {
@@ -199,13 +219,15 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     SDL_RenderPresent(app->renderer);
 
-    return app->app_quit;
+    return app->appQuit;
 }
 
 void SDL_AppQuit(void* appstate, const SDL_AppResult result) {
     UNUSED(result);
 
     if (const auto* app = static_cast<AppContext*>(appstate)) {
+        MIX_DestroyTrack(app->audioTrack);
+        MIX_DestroyMixer(app->mixer);
         SDL_DestroyRenderer(app->renderer);
         SDL_DestroyWindow(app->window);
 

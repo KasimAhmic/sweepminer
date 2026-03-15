@@ -38,9 +38,11 @@ enum class Texture {
 
 class ResourceContext {
 public:
+    // TODO: None of these need to be shared pointers I don't think. Will need to reevaluate.
     ResourceContext() {
         this->fonts = std::make_shared<ResourceRegistry<TTF_Font*, Font>>();
         this->textures = std::make_shared<ResourceRegistry<SDL_Texture*, Texture>>();
+        this->soundEffects = std::make_shared<ResourceRegistry<MIX_Audio*, SoundEffect>>();
     }
 
     ~ResourceContext() = default;
@@ -61,7 +63,16 @@ public:
         return this->textures->get(texture);
     }
 
+    void add(const SoundEffect name, MIX_Audio* soundEffect) const {
+        this->soundEffects->add(name, soundEffect);
+    }
+
+    [[nodiscard]] MIX_Audio* get(const SoundEffect soundEffect) const {
+        return this->soundEffects->get(soundEffect);
+    }
+
 private:
     std::shared_ptr<ResourceRegistry<TTF_Font*, Font>> fonts;
     std::shared_ptr<ResourceRegistry<SDL_Texture*, Texture>> textures;
+    std::shared_ptr<ResourceRegistry<MIX_Audio*, SoundEffect>> soundEffects;
 };

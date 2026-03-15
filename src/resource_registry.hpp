@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 
+// TODO: Do I need this?? Seems like a pointless abstraction over an unordered_map.
+
 template <typename T, typename Name>
 class ResourceRegistry {
 public:
