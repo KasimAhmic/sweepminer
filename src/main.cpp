@@ -13,7 +13,6 @@
 
 #include "util.hpp"
 #include "color.hpp"
-#include "debug_menu.hpp"
 #include "game.hpp"
 #include "menu_bar.hpp"
 #include "mouse.hpp"
@@ -21,7 +20,6 @@
 #define UNUSED(x) (void)(x)
 
 std::unique_ptr<Game> game;
-std::unique_ptr<DebugMenu> debugMenu;
 std::unique_ptr<MenuBar> menuBar;
 
 constexpr Color WHITE(255, 255, 255, 255);
@@ -127,7 +125,6 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
 
     game = std::make_unique<Game>(context);
     menuBar = std::make_unique<MenuBar>(game.get());
-    debugMenu = std::make_unique<DebugMenu>(game.get());
 
     game->newGame(Difficulty::BEGINNER, menuBar->getHeight());
 
@@ -215,7 +212,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     game->draw(app->renderer);
     menuBar->draw(app->renderer);
-    // debugMenu->draw(app->renderer);
 
     SDL_RenderPresent(app->renderer);
 
