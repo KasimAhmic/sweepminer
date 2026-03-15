@@ -29,4 +29,4 @@ cmake --preset macos-release
 cmake --build ./build/macos-release
 ```
 
-The binary will be at `build/{preset}/bin/SweepMiner` for Linux and macOS, or `build\{preset}\Release\SweepMiner.exe` for Windows.
+The binary will be at `build/{preset}/Release/SweepMiner`.
