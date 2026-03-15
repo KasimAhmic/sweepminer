@@ -21,18 +21,10 @@ jobs:
         include:
           - os: windows-latest
             configure_preset: windows-release
-            c_compiler: cl
-            cpp_compiler: cl
-
           - os: ubuntu-latest
             configure_preset: linux-release
-            c_compiler: gcc
-            cpp_compiler: g++
-
           - os: macos-latest
             configure_preset: macos-release
-            c_compiler: clang
-            cpp_compiler: clang++
 
     steps:
       - name: Checkout code
@@ -55,11 +47,7 @@ jobs:
       - name: Configure CMake
         run: >
           cmake --preset ${{ matrix.configure_preset }}
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
 
       - name: Build
         run: >
           cmake --build build/${{ matrix.configure_preset }}
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
