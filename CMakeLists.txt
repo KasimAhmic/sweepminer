@@ -62,7 +62,6 @@ add_executable(${PROJECT_NAME} src/main.cpp
         src/cell.cpp
         src/timer.cpp
         src/mouse.cpp
-        src/debug_menu.cpp
         src/menu_bar.cpp)
 
 add_library(imgui STATIC
