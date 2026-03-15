@@ -37,6 +37,10 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
