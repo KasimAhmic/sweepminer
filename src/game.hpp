@@ -9,6 +9,7 @@
 #include "resource_context.hpp"
 #include "timer.hpp"
 
+
 enum class Difficulty {
     BEGINNER,
     INTERMEDIATE,
@@ -28,6 +29,9 @@ public:
     ~Game() = default;
 
     void newGame(uint8_t columns, uint8_t rows, uint16_t mines, float verticalOffset);
+
+    void handleClick();
+
     void newGame(Difficulty difficulty, float verticalOffset);
 
     void loadResources(AppContext* appContext) const;
@@ -36,6 +40,13 @@ public:
     void end(bool victory);
     void tick();
     void revealConnectedCells(uint16_t x, uint16_t y);
+
+    void handleSDLEvent(const SDL_Event &event);
+
+    void handleMouseButtonEvent() const;
+
+    void handleMouseMotionEvent() const;
+
     void handleMouseEvent();
     void playSoundEffect(SoundEffect soundEffect) const;
     void openHighScoreWindow();
@@ -64,7 +75,7 @@ private:
     uint16_t clock;
     std::vector<std::vector<std::unique_ptr<Cell>>> cells;
     std::unique_ptr<Timer> timer;
-    std::shared_ptr<ResourceContext> resourceContext;
+    std::unique_ptr<ResourceContext> resourceContext;
     SDL_FRect boundingBox{};
 
     SDL_FRect drawScoreboardBorder(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const;

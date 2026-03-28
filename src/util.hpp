@@ -35,16 +35,16 @@ inline void DrawBox(
     SDL_RenderGeometry(renderer, nullptr, bottomRightBorders, 3, nullptr, 0);
 
     if (width > height) {
-        const SDL_Vertex bottomLeftTriangle[3] = {
-            SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height }, bottomRightBorderColor.asFloat() },
-            SDL_Vertex{ SDL_FPoint{ .x = x + height - borderWidth, .y = y + height }, bottomRightBorderColor.asFloat() },
-            SDL_Vertex{ SDL_FPoint{ .x = x + height - borderWidth, .y = y + borderWidth }, bottomRightBorderColor.asFloat() }
-        };
-
         const SDL_Vertex topRightTriangle[3] = {
             SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y }, topLeftBorderColor.asFloat() },
             SDL_Vertex{ SDL_FPoint{ .x = x + width - height + borderWidth, .y = y }, topLeftBorderColor.asFloat() },
             SDL_Vertex{ SDL_FPoint{ .x = x + width - height + borderWidth, .y = y + height - borderWidth }, topLeftBorderColor.asFloat() }
+        };
+
+        const SDL_Vertex bottomLeftTriangle[3] = {
+            SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height }, bottomRightBorderColor.asFloat() },
+            SDL_Vertex{ SDL_FPoint{ .x = x + height - borderWidth, .y = y + height }, bottomRightBorderColor.asFloat() },
+            SDL_Vertex{ SDL_FPoint{ .x = x + height - borderWidth, .y = y + borderWidth }, bottomRightBorderColor.asFloat() }
         };
 
         SDL_RenderGeometry(renderer, nullptr, topRightTriangle, 3, nullptr, 0);

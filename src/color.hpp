@@ -16,7 +16,8 @@ private:
     SDL_FColor floatColor;
 };
 
-constexpr Color BACKGROUND_COLOR(192, 192, 192, 255);
-constexpr Color HOVERED_COLOR(150, 150, 150, 255);
-constexpr Color BORDER_HIGHLIGHT_COLOR(255, 255, 255, 255);
-constexpr Color BORDER_SHADOW_COLOR(128, 128, 128, 255);
+constexpr Color COLOR_BUTTON_DEFAULT{ 192, 192, 192, 255 };
+constexpr Color COLOR_BUTTON_HOVERED{ 150, 150, 150, 255 };
+constexpr Color COLOR_BUTTON_ACTIVE{ 125, 125, 125, 125 };
+constexpr Color COLOR_BORDER_HIGHLIGHT{ 255, 255, 255, 255 };
+constexpr Color COLOR_BORDER_SHADOW{ 128, 128, 128, 255 };

@@ -145,56 +145,58 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
         return app->appQuit;
     }
 
-    switch (event->type) {
-        case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-            if (!Mouse::isHoveringImGuiWindow()) {
-                Mouse::setButton(event->button.button);
-                Mouse::setEvent(MouseEvent::BUTTON_DOWN);
-                Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
-                Mouse::setState(MouseState::DOWN);
+    game->handleSDLEvent(*event);
 
-                game->handleMouseEvent();
-            }
-
-            break;
-        }
-
-        case SDL_EVENT_MOUSE_BUTTON_UP: {
-            if (!Mouse::isHoveringImGuiWindow()) {
-                Mouse::setButton(event->button.button);
-                Mouse::setEvent(MouseEvent::BUTTON_UP);
-                Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
-                Mouse::setState(MouseState::UP);
-
-                game->handleMouseEvent();
-            }
-
-            break;
-        }
-
-        case SDL_EVENT_MOUSE_MOTION: {
-            Mouse::setEvent(MouseEvent::MOVE);
-            Mouse::setPosition(static_cast<int32_t>(event->motion.x), static_cast<int32_t>(event->motion.y));
-            game->handleMouseEvent();
-            break;
-        }
-
-        case SDL_EVENT_WINDOW_MOUSE_ENTER: {
-            Mouse::setEvent(MouseEvent::ENTER);
-            game->handleMouseEvent();
-            break;
-        }
-
-        case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
-            Mouse::setEvent(MouseEvent::LEAVE);
-            game->handleMouseEvent();
-            break;
-        }
-
-        default: {
-            break;
-        }
-    }
+    // switch (event->type) {
+    //     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+    //         if (!Mouse::isHoveringImGuiWindow()) {
+    //             Mouse::setButton(event->button.button);
+    //             Mouse::setEvent(MouseEvent::BUTTON_DOWN);
+    //             Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
+    //             Mouse::setState(MouseState::DOWN);
+    //
+    //             game->handleMouseEvent();
+    //         }
+    //
+    //         break;
+    //     }
+    //
+    //     case SDL_EVENT_MOUSE_BUTTON_UP: {
+    //         if (!Mouse::isHoveringImGuiWindow()) {
+    //             Mouse::setButton(event->button.button);
+    //             Mouse::setEvent(MouseEvent::BUTTON_UP);
+    //             Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
+    //             Mouse::setState(MouseState::UP);
+    //
+    //             game->handleMouseEvent();
+    //         }
+    //
+    //         break;
+    //     }
+    //
+    //     case SDL_EVENT_MOUSE_MOTION: {
+    //         Mouse::setEvent(MouseEvent::MOVE);
+    //         Mouse::setPosition(static_cast<int32_t>(event->motion.x), static_cast<int32_t>(event->motion.y));
+    //         game->handleMouseEvent();
+    //         break;
+    //     }
+    //
+    //     case SDL_EVENT_WINDOW_MOUSE_ENTER: {
+    //         Mouse::setEvent(MouseEvent::ENTER);
+    //         game->handleMouseEvent();
+    //         break;
+    //     }
+    //
+    //     case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
+    //         Mouse::setEvent(MouseEvent::LEAVE);
+    //         game->handleMouseEvent();
+    //         break;
+    //     }
+    //
+    //     default: {
+    //         break;
+    //     }
+    // }
 
     return SDL_APP_CONTINUE;
 }

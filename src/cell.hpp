@@ -1,61 +1,64 @@
 #pragma once
 
-#include <optional>
+#include "button.hpp"
+#include "color.hpp"
 
-#include <SDL3/SDL.h>
+typedef void (*Callback)();
 
-#include "context.hpp"
-#include "resource_context.hpp"
-
-class Game; // Forward declaration
-
-class Cell {
+class Cell : public Button {
 public:
     enum class State {
+        UNKNOWN = -1,
         HIDDEN,
         FLAGGED,
         QUESTIONED,
         REVEALED,
     };
 
-    Cell(const AppContext &context,
-        uint16_t id,
-        float xPosition,
-        float yPosition,
-        uint8_t column,
-        uint8_t row,
-        bool containsMine,
-        const std::shared_ptr<ResourceContext> &resourceContext);
+    explicit Cell(const AppContext &context,
+                  const SDL_FRect &rect,
+                  const uint16_t id,
+                  const bool containsMine,
+                  Callback mouseOverCallback = nullptr,
+                  Callback mouseOutCallback = nullptr,
+                  Callback mouseDownCallback = nullptr,
+                  Callback mouseUpCallback = nullptr)
+        : Button(context, rect),
+          id(id),
+          containsMine(containsMine),
+          mouseOverCallback(mouseOverCallback),
+          mouseOutCallback(mouseOutCallback),
+          mouseDownCallback(mouseDownCallback),
+          mouseUpCallback(mouseUpCallback) {
+        this->setBackgroundColor(COLOR_BUTTON_DEFAULT)
+                .setBorderHighlightColor(COLOR_BORDER_HIGHLIGHT)
+                .setBorderShadowColor(COLOR_BORDER_SHADOW)
+                .setBorderWidth(2);
+    }
 
-    ~Cell() = default;
+    void onMouseOver() override;
+    void onMouseOut() override;
+    void onMouseDown() override;
+    void onMouseUp() override;
 
-    [[nodiscard]] uint16_t getId() const { return this->id; }
-    [[nodiscard]] float getXPosition() const { return this->xPosition; }
-    [[nodiscard]] float getYPosition() const { return this->yPosition; }
-    [[nodiscard]] uint8_t getColumn() const { return this->column; }
-    [[nodiscard]] uint8_t getRow() const { return this->row; }
     [[nodiscard]] bool hasMine() const { return this->containsMine; }
 
     [[nodiscard]] uint8_t getSurroundingMines() const { return this->surroundingMines; }
-    void setSurroundingMines(const uint8_t surroundingMines) { this->surroundingMines = surroundingMines; }
+    void setSurroundingMines(const uint8_t count) { this->surroundingMines = count; }
 
     [[nodiscard]] State getState() const { return this->state; }
-    void setState(const Cell::State state) { this->state = state; }
+    void setState(const State s) { this->state = s; }
 
-    void draw(SDL_Renderer* renderer) const;
-    std::optional<std::pair<uint16_t, uint16_t>> reveal();
+    void render() override;
 
 private:
-    AppContext context;
     uint16_t id;
-    float xPosition;
-    float yPosition;
-    uint8_t column;
-    uint8_t row;
-    State state;
-    uint8_t surroundingMines;
     bool containsMine;
-    std::shared_ptr<ResourceContext> resourceContext;
-
-    void drawGrid(SDL_Renderer *renderer) const;
+    uint8_t surroundingMines = 0;
+    State state = State::HIDDEN;
+    Color backgroundColor = COLOR_BUTTON_DEFAULT;
+    Callback mouseOverCallback;
+    Callback mouseOutCallback;
+    Callback mouseDownCallback;
+    Callback mouseUpCallback;
 };

@@ -59,6 +59,8 @@ add_subdirectory(external/SDL_mixer EXCLUDE_FROM_ALL)
 
 add_executable(${PROJECT_NAME} src/main.cpp
         src/game.cpp
+        src/box.cpp
+        src/button.cpp
         src/cell.cpp
         src/timer.cpp
         src/mouse.cpp

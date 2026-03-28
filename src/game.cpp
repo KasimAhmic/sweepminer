@@ -14,7 +14,7 @@
 #include "constants.hpp"
 #include "textures.hpp"
 
-typedef std::pair<int32_t, int32_t> Offset;
+typedef std::pair<int8_t, int8_t> Offset;
 
 constexpr Offset NORTH_WEST = {-1, -1};
 constexpr Offset NORTH      = {+0, -1};
@@ -47,7 +47,7 @@ Game::Game(const AppContext &context):
     state(Game::State::NEW_GAME),
     clock(0),
     timer(std::make_unique<Timer>([this] { this->tick(); }, 1000)),
-    resourceContext(std::make_shared<ResourceContext>()) {}
+    resourceContext(std::make_unique<ResourceContext>()) {}
 
 void Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t mines, const float verticalOffset) {
     this->timer->stop();
@@ -78,15 +78,16 @@ void Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t min
         std::vector<std::unique_ptr<Cell>> cellRow;
 
         for (uint8_t col = 0; col < this->columns; col++) {
-            cellRow.emplace_back(std::make_unique<Cell>(
-                this->context,
-                id,
+            const SDL_FRect rect{
                 static_cast<float>(col * CELL_SIZE + CELL_GRID_OFFSET_X + THICK_BORDER_WIDTH * 2),
                 static_cast<float>(row * CELL_SIZE + CELL_GRID_OFFSET_Y + THICK_BORDER_WIDTH * 2) + verticalOffset,
-                col,
-                row,
-                mineCells.contains(id),
-                this->resourceContext));
+                CELL_SIZE,
+                CELL_SIZE
+            };
+            cellRow.emplace_back(std::make_unique<Cell>(this->context,
+                rect,
+                id,
+                mineCells.contains(id)));
             id++;
         }
 
@@ -101,12 +102,9 @@ void Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t min
                 const uint16_t newRow = row + deltaRow;
                 const uint16_t newColumn = column + deltaColumn;
 
-                if (newRow < 0 ||
-                    newRow >= this->rows ||
-                    newColumn < 0 ||
-                    newColumn >= this->columns) {
+                if (newRow < 0 || newRow >= this->rows || newColumn < 0 || newColumn >= this->columns) {
                     continue;
-                    }
+                }
 
                 if (const Cell* cell = this->cells[newRow][newColumn].get(); cell != nullptr && cell->hasMine()) {
                     surroundingMineCount++;
@@ -118,15 +116,19 @@ void Game::newGame(const uint8_t columns, const uint8_t rows, const uint16_t min
     }
 
     this->setBoundingBox({
-        THICK_BORDER_WIDTH,
-        verticalOffset + THICK_BORDER_WIDTH,
-        static_cast<float>(columns * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SPACING * 2),
-        static_cast<float>(rows * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SCOREBOARD_HEIGHT + SPACING * 3)
+        .x = THICK_BORDER_WIDTH,
+        .y = verticalOffset + THICK_BORDER_WIDTH,
+        .w = static_cast<float>(columns * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SPACING * 2),
+        .h = static_cast<float>(rows * CELL_SIZE + THICK_BORDER_WIDTH * 3 + SCOREBOARD_HEIGHT + SPACING * 3)
     });
 
     SDL_SetWindowSize(this->context.window,
         static_cast<int32_t>(this->getBoundingBox().w),
         static_cast<int32_t>(this->getBoundingBox().h + verticalOffset));
+}
+
+void Game::handleClick() {
+
 }
 
 void Game::newGame(const Difficulty difficulty, const float verticalOffset) {
@@ -143,7 +145,7 @@ void Game::newGame(const Difficulty difficulty, const float verticalOffset) {
 }
 
 void Game::draw(SDL_Renderer *renderer) const {
-    SetRenderDrawColor(renderer, BACKGROUND_COLOR);
+    SetRenderDrawColor(renderer, COLOR_BUTTON_DEFAULT);
     const SDL_FRect rect = {
         (this->boundingBox.x),
         this->boundingBox.y, // TODO: Verify the appearance on high DPI displays
@@ -163,6 +165,8 @@ void Game::draw(SDL_Renderer *renderer) const {
         static_cast<float>(this->columns) * CELL_SIZE + THICK_BORDER_WIDTH * 2,
         static_cast<float>(this->rows) * CELL_SIZE + THICK_BORDER_WIDTH * 2,
     };
+
+    // this->drawCellGrid(renderer, &cellGridBoundingBox);
 
     this->drawCellGrid(renderer, &cellGridBoundingBox);
 }
@@ -224,79 +228,115 @@ void Game::revealConnectedCells(uint16_t x, uint16_t y) {
     }
 }
 
-void Game::handleMouseEvent() {
-    if (this->getState() != Game::State::RUNNING && this->getState() != Game::State::NEW_GAME) {
+void Game::handleSDLEvent(const SDL_Event& event) {
+    if (this->getState() != State::RUNNING && this->getState() != State::NEW_GAME) {
         return;
     }
 
-    Cell* cell = this->getHoveredCell();
+    const Cell* hitCell = nullptr;
 
-    if (cell == nullptr) {
-        return;
-    }
+    for (const auto &row : this->cells) {
+        bool hit = false;
 
-    if (Mouse::getEvent() == MouseEvent::BUTTON_UP && Mouse::getButton() == MouseButton::LEFT) {
-        this->start();
+        for (const auto &cell : row) {
+            if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+                hit = cell->handleMouseEvent(event.button);
 
-        const std::optional<std::pair<uint16_t, uint16_t>> clickedCell = cell->reveal();
-
-        if (clickedCell == std::nullopt) {
-            this->end(false);
-            this->playSoundEffect(SoundEffect::EXPLODED);
-            return;
-        }
-
-        this->revealConnectedCells(clickedCell->first, clickedCell->second);
-
-        int32_t revealedCells = 0;
-        int32_t flaggedMines = 0;
-
-        for (const auto &row : this->cells) {
-            for (const auto &rowCell : row) {
-                if (rowCell->getState() == Cell::State::FLAGGED && rowCell->hasMine()) {
-                    flaggedMines++;
+                if (hit) {
+                    hitCell = cell.get();
+                    break;
                 }
+            } else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_WINDOW_MOUSE_LEAVE) {
+                hit = cell->handleMouseEvent(event.motion);
 
-                if (rowCell->getState() == Cell::State::REVEALED) {
-                    revealedCells++;
+                if (hit) {
+                    hitCell = cell.get();
+                    break;
                 }
             }
         }
 
-        if (this->getColumns() * this->getRows() - revealedCells == flaggedMines) {
-            this->setState(Game::State::VICTORY);
-            this->end(true);
-        }
-
-        return;
+        if (hit) break;
     }
 
-    if (Mouse::getEvent() == MouseEvent::BUTTON_DOWN && Mouse::getButton() == MouseButton::RIGHT) {
-
-        if (cell->getState() == Cell::State::REVEALED) {
-            return;
-        }
-
-        if (cell->getState() == Cell::State::HIDDEN && this->flags > 0) {
-            cell->setState(Cell::State::FLAGGED);
-            this->playSoundEffect(SoundEffect::FLAGGED);
-            this->flags--;
-            return;
-        }
-
-        if (cell->getState() == Cell::State::FLAGGED) {
-            cell->setState(Cell::State::QUESTIONED);
-            this->playSoundEffect(SoundEffect::FLAGGED);
-            this->flags++;
-            return;
-        }
-
-        if (cell->getState() == Cell::State::QUESTIONED) {
-            cell->setState(Cell::State::HIDDEN);
-            this->playSoundEffect(SoundEffect::FLAGGED);
-        }
+    if (hitCell != nullptr) {
+        this->start();
     }
 }
+
+// void Game::handleMouseEvent() {
+//     if (this->getState() != Game::State::RUNNING && this->getState() != Game::State::NEW_GAME) {
+//         return;
+//     }
+//
+//     OldCell* cell = this->getHoveredCell();
+//
+//     if (cell == nullptr) {
+//         return;
+//     }
+//
+//     if (Mouse::getEvent() == MouseEvent::BUTTON_UP && Mouse::getButton() == MouseButton::LEFT) {
+//         this->start();
+//
+//         const std::optional<std::pair<uint16_t, uint16_t>> clickedCell = cell->reveal();
+//
+//         if (clickedCell == std::nullopt) {
+//             this->end(false);
+//             this->playSoundEffect(SoundEffect::EXPLODED);
+//             return;
+//         }
+//
+//         this->revealConnectedCells(clickedCell->first, clickedCell->second);
+//
+//         int32_t revealedCells = 0;
+//         int32_t flaggedMines = 0;
+//
+//         for (const auto &row : this->cells) {
+//             for (const auto &rowCell : row) {
+//                 if (rowCell->getState() == Cell::State::FLAGGED && rowCell->hasMine()) {
+//                     flaggedMines++;
+//                 }
+//
+//                 if (rowCell->getState() == Cell::State::REVEALED) {
+//                     revealedCells++;
+//                 }
+//             }
+//         }
+//
+//         if (this->getColumns() * this->getRows() - revealedCells == flaggedMines) {
+//             this->setState(Game::State::VICTORY);
+//             this->end(true);
+//         }
+//
+//         return;
+//     }
+//
+//     if (Mouse::getEvent() == MouseEvent::BUTTON_DOWN && Mouse::getButton() == MouseButton::RIGHT) {
+//
+//         if (cell->getState() == OldCell::OldState::REVEALED) {
+//             return;
+//         }
+//
+//         if (cell->getState() == OldCell::OldState::HIDDEN && this->flags > 0) {
+//             cell->setState(OldCell::OldState::FLAGGED);
+//             this->playSoundEffect(SoundEffect::FLAGGED);
+//             this->flags--;
+//             return;
+//         }
+//
+//         if (cell->getState() == OldCell::OldState::FLAGGED) {
+//             cell->setState(OldCell::OldState::QUESTIONED);
+//             this->playSoundEffect(SoundEffect::FLAGGED);
+//             this->flags++;
+//             return;
+//         }
+//
+//         if (cell->getState() == OldCell::OldState::QUESTIONED) {
+//             cell->setState(OldCell::OldState::HIDDEN);
+//             this->playSoundEffect(SoundEffect::FLAGGED);
+//         }
+//     }
+// }
 
 void Game::playSoundEffect(SoundEffect soundEffect) const {
     MIX_SetTrackAudio(this->context.audioTrack, this->resourceContext->get(soundEffect));
@@ -324,27 +364,27 @@ void Game::openHighScoreWindow() {
     SDL_ShowWindow(window);
 }
 
-Cell* Game::getHoveredCell() const {
-    Cell* cell = nullptr;
-
-    for (const auto &row : this->cells) {
-        for (const auto &rowCell : row) {
-            const SDL_FRect cellRegion{
-                rowCell->getXPosition(),
-                rowCell->getYPosition(),
-                CELL_SIZE,
-                CELL_SIZE
-            };
-
-            if (Mouse::withinRegion(&cellRegion)) {
-                cell = rowCell.get();
-                break;
-            }
-        }
-    }
-
-    return cell;
-}
+// OldCell* Game::getHoveredCell() const {
+//     OldCell* cell = nullptr;
+//
+//     for (const auto &row : this->cells) {
+//         for (const auto &rowCell : row) {
+//             const SDL_FRect cellRegion{
+//                 rowCell->getXPosition(),
+//                 rowCell->getYPosition(),
+//                 CELL_SIZE,
+//                 CELL_SIZE
+//             };
+//
+//             if (Mouse::withinRegion(&cellRegion)) {
+//                 cell = rowCell.get();
+//                 break;
+//             }
+//         }
+//     }
+//
+//     return cell;
+// }
 
 void Game::loadResources(AppContext* appContext) const {
     this->resourceContext->add(Texture::CELL, Game::loadTexture(appContext, "assets/images/cell.png"));
@@ -393,9 +433,9 @@ SDL_FRect Game::drawScoreboardBorder(SDL_Renderer *renderer, const SDL_FRect *bo
         scoreboardBoundingBox.w,
         scoreboardBoundingBox.h,
         MEDIUM_BORDER_WIDTH,
-        BACKGROUND_COLOR,
-        BORDER_SHADOW_COLOR,
-        BORDER_HIGHLIGHT_COLOR);
+        COLOR_BUTTON_DEFAULT,
+        COLOR_BORDER_SHADOW,
+        COLOR_BORDER_HIGHLIGHT);
 
     return scoreboardBoundingBox;
 }
@@ -409,9 +449,9 @@ void Game::drawFlagCounter(SDL_Renderer *renderer, const SDL_FRect *boundingBox)
         DISPLAY_WIDTH,
         DISPLAY_HEIGHT,
         THIN_BORDER_WIDTH,
-        BACKGROUND_COLOR,
-        BORDER_SHADOW_COLOR,
-        BORDER_HIGHLIGHT_COLOR);
+        COLOR_BUTTON_DEFAULT,
+        COLOR_BORDER_SHADOW,
+        COLOR_BORDER_HIGHLIGHT);
 
     const std::array<uint8_t, 3> flagDigits = Game::getDisplayDigits(this->flags);
 
@@ -446,9 +486,9 @@ void Game::drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) cons
         button.w + THIN_BORDER_WIDTH,
         button.h + THIN_BORDER_WIDTH,
         THIN_BORDER_WIDTH,
-        BORDER_SHADOW_COLOR,
-        BORDER_SHADOW_COLOR,
-        BORDER_SHADOW_COLOR);
+        COLOR_BORDER_SHADOW,
+        COLOR_BORDER_SHADOW,
+        COLOR_BORDER_SHADOW);
 
     // Bottom right border
     DrawBox(renderer,
@@ -457,9 +497,9 @@ void Game::drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) cons
         button.w + THIN_BORDER_WIDTH,
         button.h + THIN_BORDER_WIDTH,
         THIN_BORDER_WIDTH,
-        BORDER_SHADOW_COLOR,
-        BORDER_SHADOW_COLOR,
-        BORDER_SHADOW_COLOR);
+        COLOR_BORDER_SHADOW,
+        COLOR_BORDER_SHADOW,
+        COLOR_BORDER_SHADOW);
 
     const bool isPressed = Mouse::withinRegion(&button) && Mouse::isLeftClicking() && Mouse::eventStartedWithinRegion(&button);
 
@@ -470,9 +510,9 @@ void Game::drawButton(SDL_Renderer *renderer, const SDL_FRect *boundingBox) cons
         button.w,
         button.h,
         isPressed ? THIN_BORDER_WIDTH : MEDIUM_BORDER_WIDTH,
-        BACKGROUND_COLOR,
-        isPressed ? BORDER_SHADOW_COLOR : BORDER_HIGHLIGHT_COLOR,
-        isPressed ? BACKGROUND_COLOR : BORDER_SHADOW_COLOR);
+        COLOR_BUTTON_DEFAULT,
+        isPressed ? COLOR_BORDER_SHADOW : COLOR_BORDER_HIGHLIGHT,
+        isPressed ? COLOR_BUTTON_DEFAULT : COLOR_BORDER_SHADOW);
 
     // TODO: This is not quite right, fix it later
     const float smileyOffset = isPressed ? THIN_BORDER_WIDTH : 0.0f;
@@ -514,9 +554,9 @@ void Game::drawTimer(SDL_Renderer *renderer, const SDL_FRect *boundingBox) const
         DISPLAY_WIDTH,
         DISPLAY_HEIGHT,
         THIN_BORDER_WIDTH,
-        BACKGROUND_COLOR,
-        BORDER_SHADOW_COLOR,
-        BORDER_HIGHLIGHT_COLOR);
+        COLOR_BUTTON_DEFAULT,
+        COLOR_BORDER_SHADOW,
+        COLOR_BORDER_HIGHLIGHT);
 
     const std::array<uint8_t, 3> clockDigits = Game::getDisplayDigits(this->clock);
 
@@ -542,14 +582,14 @@ void Game::drawCellGrid(SDL_Renderer *renderer, const SDL_FRect *boundingBox) co
         boundingBox->w,
         boundingBox->h,
         THICK_BORDER_WIDTH,
-        BACKGROUND_COLOR,
-        BORDER_SHADOW_COLOR,
-        BORDER_HIGHLIGHT_COLOR);
+        COLOR_BUTTON_DEFAULT,
+        COLOR_BORDER_SHADOW,
+        COLOR_BORDER_HIGHLIGHT);
 
     // Cell grid
     for (const auto &row : this->cells) {
         for (const auto &cell : row) {
-            cell->draw(renderer);
+            cell->render();
         }
     }
 }
