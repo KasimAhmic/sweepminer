@@ -1,81 +1,142 @@
 #pragma once
 
-#include "SDL3/SDL.h"
+#include <unordered_map>
 
-#include "color.hpp"
+#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_log.h>
 
-inline void SetRenderDrawColor(SDL_Renderer* renderer, const Color& color) {
-    SDL_SetRenderDrawColor(renderer, color.asInt().r, color.asInt().g, color.asInt().b, color.asInt().a);
+inline SDL_AppResult SDL_Fail(const char* message) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s: %s", message, SDL_GetError());
+
+    return SDL_APP_FAILURE;
 }
 
-inline void DrawBox(
-    SDL_Renderer *renderer,
-    const float x,
-    const float y,
-    const float width,
-    const float height,
-    const float borderWidth,
-    const Color &backgroundColor,
-    const Color &topLeftBorderColor,
-    const Color &bottomRightBorderColor) {
+// TODO: Can probably remove this once the game is done
+inline const std::unordered_map<Uint32, const char*> SDL_EVENT_MAP = {
+    {SDL_EVENT_FIRST, "SDL_EVENT_FIRST"},
+    {SDL_EVENT_QUIT, "SDL_EVENT_QUIT"},
+    {SDL_EVENT_TERMINATING, "SDL_EVENT_TERMINATING"},
+    {SDL_EVENT_LOW_MEMORY, "SDL_EVENT_LOW_MEMORY"},
+    {SDL_EVENT_WILL_ENTER_BACKGROUND, "SDL_EVENT_WILL_ENTER_BACKGROUND"},
+    {SDL_EVENT_DID_ENTER_BACKGROUND, "SDL_EVENT_DID_ENTER_BACKGROUND"},
+    {SDL_EVENT_WILL_ENTER_FOREGROUND, "SDL_EVENT_WILL_ENTER_FOREGROUND"},
+    {SDL_EVENT_DID_ENTER_FOREGROUND, "SDL_EVENT_DID_ENTER_FOREGROUND"},
+    {SDL_EVENT_LOCALE_CHANGED, "SDL_EVENT_LOCALE_CHANGED"},
+    {SDL_EVENT_SYSTEM_THEME_CHANGED, "SDL_EVENT_SYSTEM_THEME_CHANGED"},
+    {SDL_EVENT_DISPLAY_ORIENTATION, "SDL_EVENT_DISPLAY_ORIENTATION"},
+    {SDL_EVENT_DISPLAY_ADDED, "SDL_EVENT_DISPLAY_ADDED"},
+    {SDL_EVENT_DISPLAY_REMOVED, "SDL_EVENT_DISPLAY_REMOVED"},
+    {SDL_EVENT_DISPLAY_MOVED, "SDL_EVENT_DISPLAY_MOVED"},
+    {SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED, "SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED"},
+    {SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED, "SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED"},
+    {SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED, "SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED"},
+    {SDL_EVENT_DISPLAY_FIRST, "SDL_EVENT_DISPLAY_FIRST"},
+    {SDL_EVENT_DISPLAY_LAST, "SDL_EVENT_DISPLAY_LAST"},
+    {SDL_EVENT_WINDOW_SHOWN, "SDL_EVENT_WINDOW_SHOWN"},
+    {SDL_EVENT_WINDOW_HIDDEN, "SDL_EVENT_WINDOW_HIDDEN"},
+    {SDL_EVENT_WINDOW_EXPOSED, "SDL_EVENT_WINDOW_EXPOSED"},
+    {SDL_EVENT_WINDOW_MOVED, "SDL_EVENT_WINDOW_MOVED"},
+    {SDL_EVENT_WINDOW_RESIZED, "SDL_EVENT_WINDOW_RESIZED"},
+    {SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED, "SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED"},
+    {SDL_EVENT_WINDOW_METAL_VIEW_RESIZED, "SDL_EVENT_WINDOW_METAL_VIEW_RESIZED"},
+    {SDL_EVENT_WINDOW_MINIMIZED, "SDL_EVENT_WINDOW_MINIMIZED"},
+    {SDL_EVENT_WINDOW_MAXIMIZED, "SDL_EVENT_WINDOW_MAXIMIZED"},
+    {SDL_EVENT_WINDOW_RESTORED, "SDL_EVENT_WINDOW_RESTORED"},
+    {SDL_EVENT_WINDOW_MOUSE_ENTER, "SDL_EVENT_WINDOW_MOUSE_ENTER"},
+    {SDL_EVENT_WINDOW_MOUSE_LEAVE, "SDL_EVENT_WINDOW_MOUSE_LEAVE"},
+    {SDL_EVENT_WINDOW_FOCUS_GAINED, "SDL_EVENT_WINDOW_FOCUS_GAINED"},
+    {SDL_EVENT_WINDOW_FOCUS_LOST, "SDL_EVENT_WINDOW_FOCUS_LOST"},
+    {SDL_EVENT_WINDOW_CLOSE_REQUESTED, "SDL_EVENT_WINDOW_CLOSE_REQUESTED"},
+    {SDL_EVENT_WINDOW_HIT_TEST, "SDL_EVENT_WINDOW_HIT_TEST"},
+    {SDL_EVENT_WINDOW_ICCPROF_CHANGED, "SDL_EVENT_WINDOW_ICCPROF_CHANGED"},
+    {SDL_EVENT_WINDOW_DISPLAY_CHANGED, "SDL_EVENT_WINDOW_DISPLAY_CHANGED"},
+    {SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED, "SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED"},
+    {SDL_EVENT_WINDOW_SAFE_AREA_CHANGED, "SDL_EVENT_WINDOW_SAFE_AREA_CHANGED"},
+    {SDL_EVENT_WINDOW_OCCLUDED, "SDL_EVENT_WINDOW_OCCLUDED"},
+    {SDL_EVENT_WINDOW_ENTER_FULLSCREEN, "SDL_EVENT_WINDOW_ENTER_FULLSCREEN"},
+    {SDL_EVENT_WINDOW_LEAVE_FULLSCREEN, "SDL_EVENT_WINDOW_LEAVE_FULLSCREEN"},
+    {SDL_EVENT_WINDOW_DESTROYED, "SDL_EVENT_WINDOW_DESTROYED"},
+    {SDL_EVENT_WINDOW_HDR_STATE_CHANGED, "SDL_EVENT_WINDOW_HDR_STATE_CHANGED"},
+    {SDL_EVENT_WINDOW_FIRST, "SDL_EVENT_WINDOW_FIRST"},
+    {SDL_EVENT_WINDOW_LAST, "SDL_EVENT_WINDOW_LAST"},
+    {SDL_EVENT_KEY_DOWN, "SDL_EVENT_KEY_DOWN"},
+    {SDL_EVENT_KEY_UP, "SDL_EVENT_KEY_UP"},
+    {SDL_EVENT_TEXT_EDITING, "SDL_EVENT_TEXT_EDITING"},
+    {SDL_EVENT_TEXT_INPUT, "SDL_EVENT_TEXT_INPUT"},
+    {SDL_EVENT_KEYMAP_CHANGED, "SDL_EVENT_KEYMAP_CHANGED"},
+    {SDL_EVENT_KEYBOARD_ADDED, "SDL_EVENT_KEYBOARD_ADDED"},
+    {SDL_EVENT_KEYBOARD_REMOVED, "SDL_EVENT_KEYBOARD_REMOVED"},
+    {SDL_EVENT_TEXT_EDITING_CANDIDATES, "SDL_EVENT_TEXT_EDITING_CANDIDATES"},
+    {SDL_EVENT_MOUSE_MOTION, "SDL_EVENT_MOUSE_MOTION"},
+    {SDL_EVENT_MOUSE_BUTTON_DOWN, "SDL_EVENT_MOUSE_BUTTON_DOWN"},
+    {SDL_EVENT_MOUSE_BUTTON_UP, "SDL_EVENT_MOUSE_BUTTON_UP"},
+    {SDL_EVENT_MOUSE_WHEEL, "SDL_EVENT_MOUSE_WHEEL"},
+    {SDL_EVENT_MOUSE_ADDED, "SDL_EVENT_MOUSE_ADDED"},
+    {SDL_EVENT_MOUSE_REMOVED, "SDL_EVENT_MOUSE_REMOVED"},
+    {SDL_EVENT_JOYSTICK_AXIS_MOTION, "SDL_EVENT_JOYSTICK_AXIS_MOTION"},
+    {SDL_EVENT_JOYSTICK_BALL_MOTION, "SDL_EVENT_JOYSTICK_BALL_MOTION"},
+    {SDL_EVENT_JOYSTICK_HAT_MOTION, "SDL_EVENT_JOYSTICK_HAT_MOTION"},
+    {SDL_EVENT_JOYSTICK_BUTTON_DOWN, "SDL_EVENT_JOYSTICK_BUTTON_DOWN"},
+    {SDL_EVENT_JOYSTICK_BUTTON_UP, "SDL_EVENT_JOYSTICK_BUTTON_UP"},
+    {SDL_EVENT_JOYSTICK_ADDED, "SDL_EVENT_JOYSTICK_ADDED"},
+    {SDL_EVENT_JOYSTICK_REMOVED, "SDL_EVENT_JOYSTICK_REMOVED"},
+    {SDL_EVENT_JOYSTICK_BATTERY_UPDATED, "SDL_EVENT_JOYSTICK_BATTERY_UPDATED"},
+    {SDL_EVENT_JOYSTICK_UPDATE_COMPLETE, "SDL_EVENT_JOYSTICK_UPDATE_COMPLETE"},
+    {SDL_EVENT_GAMEPAD_AXIS_MOTION, "SDL_EVENT_GAMEPAD_AXIS_MOTION"},
+    {SDL_EVENT_GAMEPAD_BUTTON_DOWN, "SDL_EVENT_GAMEPAD_BUTTON_DOWN"},
+    {SDL_EVENT_GAMEPAD_BUTTON_UP, "SDL_EVENT_GAMEPAD_BUTTON_UP"},
+    {SDL_EVENT_GAMEPAD_ADDED, "SDL_EVENT_GAMEPAD_ADDED"},
+    {SDL_EVENT_GAMEPAD_REMOVED, "SDL_EVENT_GAMEPAD_REMOVED"},
+    {SDL_EVENT_GAMEPAD_REMAPPED, "SDL_EVENT_GAMEPAD_REMAPPED"},
+    {SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN, "SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN"},
+    {SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION, "SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION"},
+    {SDL_EVENT_GAMEPAD_TOUCHPAD_UP, "SDL_EVENT_GAMEPAD_TOUCHPAD_UP"},
+    {SDL_EVENT_GAMEPAD_SENSOR_UPDATE, "SDL_EVENT_GAMEPAD_SENSOR_UPDATE"},
+    {SDL_EVENT_GAMEPAD_UPDATE_COMPLETE, "SDL_EVENT_GAMEPAD_UPDATE_COMPLETE"},
+    {SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED, "SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED"},
+    {SDL_EVENT_FINGER_DOWN, "SDL_EVENT_FINGER_DOWN"},
+    {SDL_EVENT_FINGER_UP, "SDL_EVENT_FINGER_UP"},
+    {SDL_EVENT_FINGER_MOTION, "SDL_EVENT_FINGER_MOTION"},
+    {SDL_EVENT_FINGER_CANCELED, "SDL_EVENT_FINGER_CANCELED"},
+    {SDL_EVENT_CLIPBOARD_UPDATE, "SDL_EVENT_CLIPBOARD_UPDATE"},
+    {SDL_EVENT_DROP_FILE, "SDL_EVENT_DROP_FILE"},
+    {SDL_EVENT_DROP_TEXT, "SDL_EVENT_DROP_TEXT"},
+    {SDL_EVENT_DROP_BEGIN, "SDL_EVENT_DROP_BEGIN"},
+    {SDL_EVENT_DROP_COMPLETE, "SDL_EVENT_DROP_COMPLETE"},
+    {SDL_EVENT_DROP_POSITION, "SDL_EVENT_DROP_POSITION"},
+    {SDL_EVENT_AUDIO_DEVICE_ADDED, "SDL_EVENT_AUDIO_DEVICE_ADDED"},
+    {SDL_EVENT_AUDIO_DEVICE_REMOVED, "SDL_EVENT_AUDIO_DEVICE_REMOVED"},
+    {SDL_EVENT_AUDIO_DEVICE_FORMAT_CHANGED, "SDL_EVENT_AUDIO_DEVICE_FORMAT_CHANGED"},
+    {SDL_EVENT_SENSOR_UPDATE, "SDL_EVENT_SENSOR_UPDATE"},
+    {SDL_EVENT_PEN_PROXIMITY_IN, "SDL_EVENT_PEN_PROXIMITY_IN"},
+    {SDL_EVENT_PEN_PROXIMITY_OUT, "SDL_EVENT_PEN_PROXIMITY_OUT"},
+    {SDL_EVENT_PEN_DOWN, "SDL_EVENT_PEN_DOWN"},
+    {SDL_EVENT_PEN_UP, "SDL_EVENT_PEN_UP"},
+    {SDL_EVENT_PEN_BUTTON_DOWN, "SDL_EVENT_PEN_BUTTON_DOWN"},
+    {SDL_EVENT_PEN_BUTTON_UP, "SDL_EVENT_PEN_BUTTON_UP"},
+    {SDL_EVENT_PEN_MOTION, "SDL_EVENT_PEN_MOTION"},
+    {SDL_EVENT_PEN_AXIS, "SDL_EVENT_PEN_AXIS"},
+    {SDL_EVENT_CAMERA_DEVICE_ADDED, "SDL_EVENT_CAMERA_DEVICE_ADDED"},
+    {SDL_EVENT_CAMERA_DEVICE_REMOVED, "SDL_EVENT_CAMERA_DEVICE_REMOVED"},
+    {SDL_EVENT_CAMERA_DEVICE_APPROVED, "SDL_EVENT_CAMERA_DEVICE_APPROVED"},
+    {SDL_EVENT_CAMERA_DEVICE_DENIED, "SDL_EVENT_CAMERA_DEVICE_DENIED"},
+    {SDL_EVENT_RENDER_TARGETS_RESET, "SDL_EVENT_RENDER_TARGETS_RESET"},
+    {SDL_EVENT_RENDER_DEVICE_RESET, "SDL_EVENT_RENDER_DEVICE_RESET"},
+    {SDL_EVENT_RENDER_DEVICE_LOST, "SDL_EVENT_RENDER_DEVICE_LOST"},
+    {SDL_EVENT_PRIVATE0, "SDL_EVENT_PRIVATE0"},
+    {SDL_EVENT_PRIVATE1, "SDL_EVENT_PRIVATE1"},
+    {SDL_EVENT_PRIVATE2, "SDL_EVENT_PRIVATE2"},
+    {SDL_EVENT_PRIVATE3, "SDL_EVENT_PRIVATE3"},
+    {SDL_EVENT_POLL_SENTINEL, "SDL_EVENT_POLL_SENTINEL"},
+    {SDL_EVENT_USER, "SDL_EVENT_USER"},
+    {SDL_EVENT_LAST, "SDL_EVENT_LAST"},
+    {SDL_EVENT_ENUM_PADDING, "SDL_EVENT_ENUM_PADDING"}
+};
 
-    const SDL_Vertex topLeftBorders[3] = {
-        SDL_Vertex{ SDL_FPoint{ .x = x, .y = y }, topLeftBorderColor.asFloat()},
-        SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height }, topLeftBorderColor.asFloat() },
-        SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y }, topLeftBorderColor.asFloat() },
-    };
-
-    const SDL_Vertex bottomRightBorders[3] = {
-        SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y + height }, bottomRightBorderColor.asFloat() },
-        SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y }, bottomRightBorderColor.asFloat() },
-        SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height }, bottomRightBorderColor.asFloat() }
-    };
-
-    SDL_RenderGeometry(renderer, nullptr, topLeftBorders, 3, nullptr, 0);
-    SDL_RenderGeometry(renderer, nullptr, bottomRightBorders, 3, nullptr, 0);
-
-    if (width > height) {
-        const SDL_Vertex bottomLeftTriangle[3] = {
-            SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height }, bottomRightBorderColor.asFloat() },
-            SDL_Vertex{ SDL_FPoint{ .x = x + height - borderWidth, .y = y + height }, bottomRightBorderColor.asFloat() },
-            SDL_Vertex{ SDL_FPoint{ .x = x + height - borderWidth, .y = y + borderWidth }, bottomRightBorderColor.asFloat() }
-        };
-
-        const SDL_Vertex topRightTriangle[3] = {
-            SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y }, topLeftBorderColor.asFloat() },
-            SDL_Vertex{ SDL_FPoint{ .x = x + width - height + borderWidth, .y = y }, topLeftBorderColor.asFloat() },
-            SDL_Vertex{ SDL_FPoint{ .x = x + width - height + borderWidth, .y = y + height - borderWidth }, topLeftBorderColor.asFloat() }
-        };
-
-        SDL_RenderGeometry(renderer, nullptr, topRightTriangle, 3, nullptr, 0);
-        SDL_RenderGeometry(renderer, nullptr, bottomLeftTriangle, 3, nullptr, 0);
+inline const char* SDL_GetEventName(const Uint32 event) {
+    if (const auto it = SDL_EVENT_MAP.find(event); it != SDL_EVENT_MAP.end()) {
+        return it->second;
     }
 
-    if (height > width) {
-        const SDL_Vertex topRightTriangle[3] = {
-            SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y + width - borderWidth }, bottomRightBorderColor.asFloat() },
-            SDL_Vertex{ SDL_FPoint{ .x = x + borderWidth, .y = y + width - borderWidth }, bottomRightBorderColor.asFloat() },
-            SDL_Vertex{ SDL_FPoint{ .x = x + width, .y = y }, bottomRightBorderColor.asFloat() }
-        };
-
-        const SDL_Vertex bottomLeftTriangle[3] = {
-            SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height - width + borderWidth }, topLeftBorderColor.asFloat() },
-            SDL_Vertex{ SDL_FPoint{ .x = x + width - borderWidth, .y = y + height - width + borderWidth }, topLeftBorderColor.asFloat() },
-            SDL_Vertex{ SDL_FPoint{ .x = x, .y = y + height }, topLeftBorderColor.asFloat() }
-        };
-
-        SDL_RenderGeometry(renderer, nullptr, topRightTriangle, 3, nullptr, 0);
-        SDL_RenderGeometry(renderer, nullptr, bottomLeftTriangle, 3, nullptr, 0);
-    }
-
-    SDL_SetRenderDrawColor(renderer, backgroundColor.asInt().r, backgroundColor.asInt().g, backgroundColor.asInt().b, backgroundColor.asInt().a);
-
-    const SDL_FRect cell = {
-        x + borderWidth,
-        y + borderWidth,
-        width - borderWidth * 2,
-        height - borderWidth * 2
-    };
-
-    SDL_RenderFillRect(renderer, &cell);
+    return "Unknown SDL_Event";
 }

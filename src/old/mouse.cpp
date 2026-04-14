@@ -1,4 +1,4 @@
-#include "mouse.hpp"
+#include "../mouse.hpp"
 
 std::pair<int32_t, int32_t> Mouse::position = { 0, 0 };
 std::pair<int32_t, int32_t> Mouse::eventPosition = { 0, 0 };

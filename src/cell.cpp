@@ -1,134 +1,126 @@
 #include "cell.hpp"
-#include "util.hpp"
-#include "game.hpp"
-#include "constants.hpp"
-#include "mouse.hpp"
+
+#include "events.hpp"
 #include "textures.hpp"
 
-Cell::Cell(const AppContext &context,
-        const uint16_t id,
-        const float xPosition,
-        const float yPosition,
-        const uint8_t column,
-        const uint8_t row,
-        const bool containsMine,
-        const std::shared_ptr<ResourceContext> &resourceContext)
-    : context(context),
-      id(id),
-      xPosition(xPosition),
-      yPosition(yPosition),
-      column(column),
-      row(row),
+Cell::Cell(Context *context, const SDL_FRect &rect, const uint8_t row, const uint8_t column, const bool containsMine)
+    : Box(context, rect, 3.0f, WHITE, DARK_GREY, GREY),
+      Button(rect),
       state(State::HIDDEN),
+      row(row),
+      column(column),
       surroundingMines(0),
-      containsMine(containsMine),
-      resourceContext(resourceContext) {}
+      containsMine(containsMine) {}
 
-void Cell::draw(SDL_Renderer *renderer) const {
-    const SDL_FRect dest{
-        this->xPosition,
-        this->yPosition,
-        (CELL_SIZE),
-        (CELL_SIZE)
-    };
+Cell::~Cell() = default;
 
-    if (this->state != State::REVEALED) {
-        const SDL_FRect cellRect{
-            this->xPosition,
-            this->yPosition,
-            (CELL_SIZE),
-            (CELL_SIZE)
-        };
-
-        if (Mouse::withinRegion(&cellRect) && Mouse::getState() == MouseState::DOWN && Mouse::getButton() == MouseButton::LEFT) {
-            this->drawGrid(renderer);
-            return;
-        }
-
-        DrawBox(renderer,
-            dest.x,
-            dest.y,
-            CELL_SIZE,
-            CELL_SIZE,
-            MEDIUM_BORDER_WIDTH,
-            BACKGROUND_COLOR,
-            BORDER_HIGHLIGHT_COLOR,
-            BORDER_SHADOW_COLOR);
-
-        if (this->state == State::HIDDEN) {
-            return;
-        }
+void Cell::render() {
+    if (this->getState() == State::HIDDEN || this->getState() == State::FLAGGED || this->getState() == State::QUESTIONED) {
+        Box::render();
     }
 
-    SDL_Texture* texture = this->resourceContext->get(Texture::CELL);
+    if (this->getState() == State::REVEALED && this->getSurroundingMines() > 0) {
+        SDL_RenderTexture(
+            this->getContext().getRenderer(),
+            this->getContext().getResourceManager().getTexture(ResourceManager::Texture::CELL),
+            TextureOffset::getCountTextureOffset(this->getSurroundingMines()),
+            &Component::getRect());
 
-    if (!texture) {
         return;
     }
 
-    switch (this->state) {
-        case State::REVEALED: {
-            this->drawGrid(renderer);
+    if (this->getState() == State::EXPLODED) {
+        SDL_RenderTexture(
+            this->getContext().getRenderer(),
+            this->getContext().getResourceManager().getTexture(ResourceManager::Texture::CELL),
+            &TextureOffset::MINE_DETONATED,
+            &Component::getRect());
 
-            if (this->hasMine()) {
-                SDL_RenderTexture(renderer, texture, &TextureOffset::MINE_DETONATED, &dest);
-                return;
-            }
+        return;
+    }
 
-            if (this->getSurroundingMines() > 0) {
-                const SDL_FRect* srcRect = TextureOffset::getCountTextureOffset(this->getSurroundingMines());
+    if (this->getState() == State::FLAGGED) {
+        SDL_RenderTexture(
+            this->getContext().getRenderer(),
+            this->getContext().getResourceManager().getTexture(ResourceManager::Texture::CELL),
+            &TextureOffset::FLAG,
+            &Component::getRect());
 
-                SDL_RenderTexture(renderer, texture, srcRect, &dest);
-            }
+        return;
+    }
 
-            break;
-        }
-
-        case State::FLAGGED: {
-            SDL_RenderTexture(renderer, texture, &TextureOffset::FLAG, &dest);
-            break;
-        }
-
-        case State::QUESTIONED: {
-            SDL_RenderTexture(renderer, texture, &TextureOffset::QUESTION_MARK, &dest);
-            break;
-        }
-
-        default: {
-            break;
-        }
+    if (this->getState() == State::QUESTIONED) {
+        SDL_RenderTexture(
+            this->getContext().getRenderer(),
+            this->getContext().getResourceManager().getTexture(ResourceManager::Texture::CELL),
+            &TextureOffset::QUESTION_MARK,
+            &Component::getRect());
     }
 }
 
-std::optional<std::pair<uint16_t, uint16_t>> Cell::reveal() {
-    if (this->hasMine()) {
-        this->state = Cell::State::REVEALED;
-        return std::nullopt;
-    }
-
-    return std::make_pair(this->getColumn(), this->getRow());
+void Cell::onMouseOver(const SDL_MouseMotionEvent& event) {
+    this->setBackgroundColor(LIGHT_GREY);
 }
 
-void Cell::drawGrid(SDL_Renderer *renderer) const {
-    SetRenderDrawColor(renderer, BORDER_SHADOW_COLOR);
+void Cell::onMouseOut(const SDL_MouseMotionEvent& event) {
+    this->setBackgroundColor(GREY);
+}
 
-    float scaleX, scaleY;
+void Cell::onMouseDown(const SDL_MouseButtonEvent& event) {
+    if (this->getState() == State::HIDDEN) {
+        this->setBackgroundColor(DARK_GREY);
+    }
+}
 
-    SDL_GetRenderScale(this->context.renderer, &scaleX, &scaleY);
+void Cell::onMouseUp(const SDL_MouseButtonEvent& event) {
+    if (this->getState() != State::REVEALED && this->containsMine && event.button == SDL_BUTTON_LEFT) {
+        this->setState(State::EXPLODED);
 
-    for (int32_t i = 0; i < static_cast<int32_t>(scaleX); i++) {
-        const auto offset = static_cast<float>(i);
+        MIX_SetTrackAudio(this->getContext().getTrack(), this->getContext().getResourceManager().getSound(ResourceManager::Sound::EXPLODE));
+        MIX_PlayTrack(this->getContext().getTrack(), 0);
 
-        SDL_RenderLine(renderer,
-            this->xPosition,
-            this->yPosition + offset,
-            this->xPosition + (CELL_SIZE) - 1,
-            this->yPosition + offset);
+        SDL_Event loseGameEvent = Events::CreateSweepMinerEvent(Events::LOSE_GAME, 0);
+        SDL_PushEvent(&loseGameEvent);
 
-        SDL_RenderLine(renderer,
-            this->xPosition + offset,
-            this->yPosition,
-            this->xPosition + offset,
-            this->yPosition + (CELL_SIZE) - 1);
+        return;
+    }
+
+    if (this->getState() != State::REVEALED && !this->containsMine && event.button == SDL_BUTTON_LEFT) {
+        this->setState(State::REVEALED);
+
+        MIX_SetTrackAudio(this->getContext().getTrack(), this->getContext().getResourceManager().getSound(ResourceManager::Sound::CLICK));
+        MIX_PlayTrack(this->getContext().getTrack(), 0);
+
+        SDL_Event revealCellEvent = Events::CreateRevealCellEvent(this->row, this->column);
+        SDL_PushEvent(&revealCellEvent);
+
+        return;
+    }
+
+    if (this->getState() == State::HIDDEN && event.button == SDL_BUTTON_RIGHT) {
+        this->setState(State::FLAGGED);
+
+        MIX_SetTrackAudio(this->getContext().getTrack(), this->getContext().getResourceManager().getSound(ResourceManager::Sound::FLAG));
+        MIX_PlayTrack(this->getContext().getTrack(), 0);
+
+        return;
+    }
+
+    if (this->getState() == State::FLAGGED && event.button == SDL_BUTTON_RIGHT) {
+        this->setState(State::QUESTIONED);
+
+        MIX_SetTrackAudio(this->getContext().getTrack(), this->getContext().getResourceManager().getSound(ResourceManager::Sound::FLAG));
+        MIX_PlayTrack(this->getContext().getTrack(), 0);
+
+        return;
+    }
+
+    if (this->getState() == State::QUESTIONED && event.button == SDL_BUTTON_RIGHT) {
+        this->setState(State::HIDDEN);
+
+        MIX_SetTrackAudio(this->getContext().getTrack(), this->getContext().getResourceManager().getSound(ResourceManager::Sound::FLAG));
+        MIX_PlayTrack(this->getContext().getTrack(), 0);
+
+        return;
     }
 }

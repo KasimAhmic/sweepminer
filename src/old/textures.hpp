@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-#include <SDL3/SDL.h>
+#include "SDL3/SDL.h"
 
 namespace TextureOffset {
     constexpr SDL_FRect NONE =           { 00, 00, 16, 16 };
@@ -64,7 +64,7 @@ namespace TextureOffset {
             case 6: return &TextureOffset::COUNT_SIX;
             case 7: return &TextureOffset::COUNT_SEVEN;
             case 8: return &TextureOffset::COUNT_EIGHT;
-            default: throw std::out_of_range("Number must be between 1 and 8");
+            default: throw std::out_of_range("Number must be between 0 and 8");
         }
     }
 }

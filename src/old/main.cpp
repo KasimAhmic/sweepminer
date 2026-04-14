@@ -1,0 +1,244 @@
+#define SDL_MAIN_USE_CALLBACKS 1
+
+#include <filesystem>
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+#include <SDL3/SDL_init.h>
+#include <SDL3_ttf/SDL_ttf.h>
+#include <SDL3_mixer/SDL_mixer.h>
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
+
+#include "util.hpp"
+#include "color.hpp"
+#include "game.hpp"
+#include "menu_bar.hpp"
+#include "../mouse.hpp"
+
+#define UNUSED(x) (void)(x)
+
+std::unique_ptr<Game> game;
+std::unique_ptr<MenuBar> menuBar;
+
+constexpr Color WHITE(255, 255, 255, 255);
+constexpr Color BLACK(0, 0, 0, 255);
+
+SDL_AppResult SDL_Fail(){
+    SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
+    return SDL_APP_FAILURE;
+}
+
+SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
+    UNUSED(argc);
+    UNUSED(argv);
+
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        SDL_Log("Couldn't initialize SDL: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
+
+    if (!TTF_Init()) {
+        SDL_Log("Couldn't initialise SDL_ttf: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
+
+    if (!MIX_Init()) {
+        SDL_Log("Couldn't initialise SDL_mixer: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
+
+    SDL_Log("base path: %s", SDL_GetBasePath());
+
+    SDL_Window* window = SDL_CreateWindow("SweepMiner", 0, 0, SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    if (!window) {
+        SDL_Log("Couldn't create window: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
+
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
+    if (!renderer) {
+        SDL_Log("Couldn't create renderer: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
+
+    MIX_Mixer* mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+    if (!mixer) {
+        SDL_Log("Couldn't create mixer: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
+
+    MIX_Track* audioTrack = MIX_CreateTrack(mixer);
+    if (!audioTrack) {
+        SDL_Log("Couldn't create audio track: %s\n", SDL_GetError());
+        return SDL_Fail();
+    }
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void) io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
+
+    ImGui::StyleColorsLight();
+
+    // ImGuiStyle& style = ImGui::GetStyle();
+    // style.ScaleAllSizes(SDL_GetWindowDisplayScale(window));
+    // style.FontScaleDpi = SDL_GetWindowDisplayScale(window);
+
+    ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+    ImGui_ImplSDLRenderer3_Init(renderer);
+
+    const float scale = SDL_GetWindowDisplayScale(window);
+    SDL_Log("%f", scale);
+
+    // print some information about the window
+    SDL_ShowWindow(window);
+    {
+        int32_t width, height, backBufferWidth, backBufferHeight;
+
+        SDL_GetWindowSize(window, &width, &height);
+        SDL_GetWindowSizeInPixels(window, &backBufferWidth, &backBufferHeight);
+        SDL_Log("Window size: %ix%i", width, height);
+        SDL_Log("Back buffer size: %ix%i", backBufferWidth, backBufferHeight);
+
+        if (width != backBufferWidth){
+            SDL_Log("This is a high DPI environment.");
+        }
+    }
+
+    *appstate = new AppContext{
+        .window = window,
+        .renderer = renderer,
+        .mixer = mixer,
+        .audioTrack = audioTrack,
+    };
+
+    // pointers are pain, no clue wtf is going on here
+    AppContext context = *static_cast<AppContext *>(*appstate);
+
+    SDL_SetRenderVSync(renderer, 1);
+
+    SDL_Log("Application started successfully!");
+
+    game = std::make_unique<Game>(context);
+    menuBar = std::make_unique<MenuBar>(game.get());
+
+    game->newGame(Difficulty::BEGINNER, menuBar->getHeight());
+
+    SDL_SetRenderScale(renderer, scale, scale);
+
+    game->loadResources(&context);
+
+    return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
+    auto* app = static_cast<AppContext *>(appstate);
+
+    ImGui_ImplSDL3_ProcessEvent(event);
+
+    if (event->type == SDL_EVENT_QUIT) {
+        app->appQuit = SDL_APP_SUCCESS;
+        return app->appQuit;
+    }
+
+    switch (event->type) {
+        case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+            if (!Mouse::isHoveringImGuiWindow()) {
+                Mouse::setButton(event->button.button);
+                Mouse::setEvent(MouseEvent::BUTTON_DOWN);
+                Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
+                Mouse::setState(MouseState::DOWN);
+
+                game->handleMouseEvent();
+            }
+
+            break;
+        }
+
+        case SDL_EVENT_MOUSE_BUTTON_UP: {
+            if (!Mouse::isHoveringImGuiWindow()) {
+                Mouse::setButton(event->button.button);
+                Mouse::setEvent(MouseEvent::BUTTON_UP);
+                Mouse::setEventPosition(static_cast<int32_t>(event->button.x), static_cast<int32_t>(event->button.y));
+                Mouse::setState(MouseState::UP);
+
+                game->handleMouseEvent();
+            }
+
+            break;
+        }
+
+        case SDL_EVENT_MOUSE_MOTION: {
+            Mouse::setEvent(MouseEvent::MOVE);
+            Mouse::setPosition(static_cast<int32_t>(event->motion.x), static_cast<int32_t>(event->motion.y));
+            game->handleMouseEvent();
+            break;
+        }
+
+        case SDL_EVENT_WINDOW_MOUSE_ENTER: {
+            Mouse::setEvent(MouseEvent::ENTER);
+            game->handleMouseEvent();
+            break;
+        }
+
+        case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
+            Mouse::setEvent(MouseEvent::LEAVE);
+            game->handleMouseEvent();
+            break;
+        }
+
+        default: {
+            break;
+        }
+    }
+
+    return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppIterate(void *appstate) {
+    const auto* app = static_cast<AppContext *>(appstate);
+
+    SetRenderDrawColor(app->renderer, WHITE);
+    SDL_RenderClear(app->renderer);
+
+    int32_t windowWidth;
+    int32_t windowHeight;
+
+    SDL_GetWindowSize(app->window, &windowWidth, &windowHeight);
+
+    game->draw(app->renderer);
+    menuBar->draw(app->renderer);
+
+    SDL_RenderPresent(app->renderer);
+
+    return app->appQuit;
+}
+
+void SDL_AppQuit(void* appstate, const SDL_AppResult result) {
+    UNUSED(result);
+
+    if (const auto* app = static_cast<AppContext*>(appstate)) {
+        MIX_DestroyTrack(app->audioTrack);
+        MIX_DestroyMixer(app->mixer);
+        SDL_DestroyRenderer(app->renderer);
+        SDL_DestroyWindow(app->window);
+
+        delete app;
+    }
+
+    if (game) {
+        game.reset();
+    }
+
+    ImGui_ImplSDLRenderer3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
+
+    TTF_Quit();
+    SDL_Log("Application quit successfully!");
+    SDL_Quit();
+}

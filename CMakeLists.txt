@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(SweepMiner)
 
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
@@ -57,12 +58,35 @@ add_subdirectory(external/SDL_ttf   EXCLUDE_FROM_ALL)
 add_subdirectory(external/SDL_image EXCLUDE_FROM_ALL)
 add_subdirectory(external/SDL_mixer EXCLUDE_FROM_ALL)
 
-add_executable(${PROJECT_NAME} src/main.cpp
+add_executable(${PROJECT_NAME} WIN32 src/main.cpp
         src/game.cpp
+        src/game.hpp
+        src/context.cpp
+        src/context.hpp
+        src/resource_manager.cpp
+        src/resource_manager.hpp
+        src/component.cpp
+        src/component.hpp
+        src/box.cpp
+        src/box.hpp
+        src/color.hpp
+        src/score_board.cpp
+        src/score_board.hpp
+        src/counter.cpp
+        src/counter.hpp
+        src/cell_grid.cpp
+        src/cell_grid.hpp
         src/cell.cpp
-        src/timer.cpp
-        src/mouse.cpp
-        src/menu_bar.cpp)
+        src/cell.hpp
+        src/pair_hash.hpp
+        src/profiler.cpp
+        src/profiler.hpp
+        src/button.cpp
+        src/button.hpp
+        src/textures.hpp
+        src/events.hpp)
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE SWEEPMINER_ENABLE_PROFILER=1)
 
 add_library(imgui STATIC
         external/imgui/imgui.cpp
@@ -83,6 +107,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_mixer::SDL3_mixer)
 target_link_libraries(${PROJECT_NAME} PRIVATE imgui)
 target_link_libraries(imgui PRIVATE SDL3::SDL3)
 target_compile_features(imgui PRIVATE cxx_std_23)
+
+if(APPLE)
+    target_sources(${PROJECT_NAME} PRIVATE src/menu_bar_mac.mm src/mac_menu.mm)
+    target_link_libraries(${PROJECT_NAME} PRIVATE "-framework Cocoa")
+endif()
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

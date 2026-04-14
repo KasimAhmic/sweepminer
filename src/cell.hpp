@@ -1,61 +1,43 @@
 #pragma once
 
-#include <optional>
+#include "box.hpp"
+#include "button.hpp"
 
-#include <SDL3/SDL.h>
-
-#include "context.hpp"
-#include "resource_context.hpp"
-
-class Game; // Forward declaration
-
-class Cell {
+class Cell : public Box, public Button {
 public:
+    static constexpr float SIZE = 25.0f;
+
     enum class State {
         HIDDEN,
         FLAGGED,
         QUESTIONED,
         REVEALED,
+        EXPLODED,
     };
 
-    Cell(const AppContext &context,
-        uint16_t id,
-        float xPosition,
-        float yPosition,
-        uint8_t column,
-        uint8_t row,
-        bool containsMine,
-        const std::shared_ptr<ResourceContext> &resourceContext);
-
-    ~Cell() = default;
-
-    [[nodiscard]] uint16_t getId() const { return this->id; }
-    [[nodiscard]] float getXPosition() const { return this->xPosition; }
-    [[nodiscard]] float getYPosition() const { return this->yPosition; }
-    [[nodiscard]] uint8_t getColumn() const { return this->column; }
-    [[nodiscard]] uint8_t getRow() const { return this->row; }
-    [[nodiscard]] bool hasMine() const { return this->containsMine; }
-
-    [[nodiscard]] uint8_t getSurroundingMines() const { return this->surroundingMines; }
-    void setSurroundingMines(const uint8_t surroundingMines) { this->surroundingMines = surroundingMines; }
+    explicit Cell(Context* context, const SDL_FRect& rect, uint8_t row, uint8_t column, bool containsMine);
+    ~Cell() override;
 
     [[nodiscard]] State getState() const { return this->state; }
-    void setState(const Cell::State state) { this->state = state; }
+    void setState(const State newState) { this->state = newState; }
 
-    void draw(SDL_Renderer* renderer) const;
-    std::optional<std::pair<uint16_t, uint16_t>> reveal();
+    [[nodiscard]] uint8_t getSurroundingMines() const { return this->surroundingMines; }
+    void setSurroundingMines(const uint8_t mines) { this->surroundingMines = mines; }
+
+    [[nodiscard]] bool hasMine() const { return this->containsMine; }
+
+    void render() override;
+
+protected:
+    void onMouseOver(const SDL_MouseMotionEvent& event) override;
+    void onMouseOut(const SDL_MouseMotionEvent& event) override;
+    void onMouseDown(const SDL_MouseButtonEvent& event) override;
+    void onMouseUp(const SDL_MouseButtonEvent& event) override;
 
 private:
-    AppContext context;
-    uint16_t id;
-    float xPosition;
-    float yPosition;
-    uint8_t column;
-    uint8_t row;
     State state;
+    uint8_t row;
+    uint8_t column;
     uint8_t surroundingMines;
     bool containsMine;
-    std::shared_ptr<ResourceContext> resourceContext;
-
-    void drawGrid(SDL_Renderer *renderer) const;
 };

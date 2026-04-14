@@ -1,4 +1,4 @@
-#include "timer.hpp"
+#include "../timer.hpp"
 
 Timer::Timer(const std::function<void()> &callback, const uint32_t interval):
     callback(callback),
