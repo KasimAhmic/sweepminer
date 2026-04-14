@@ -1,5 +1,7 @@
 #define SDL_MAIN_USE_CALLBACKS 1
 
+#include "win.hpp"
+
 #include <filesystem>
 
 #include <SDL3/SDL.h>
@@ -24,6 +26,8 @@ std::unique_ptr<MenuBar> menuBar;
 
 constexpr Color WHITE(255, 255, 255, 255);
 constexpr Color BLACK(0, 0, 0, 255);
+
+bool HandleWindowsMessage(void* appstate, MSG* msg);
 
 SDL_AppResult SDL_Fail(){
     SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
@@ -84,10 +88,6 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
 
     ImGui::StyleColorsLight();
 
-    // ImGuiStyle& style = ImGui::GetStyle();
-    // style.ScaleAllSizes(SDL_GetWindowDisplayScale(window));
-    // style.FontScaleDpi = SDL_GetWindowDisplayScale(window);
-
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
 
@@ -95,25 +95,35 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     SDL_Log("%f", scale);
 
     // print some information about the window
-    SDL_ShowWindow(window);
-    {
-        int32_t width, height, backBufferWidth, backBufferHeight;
-
-        SDL_GetWindowSize(window, &width, &height);
-        SDL_GetWindowSizeInPixels(window, &backBufferWidth, &backBufferHeight);
-        SDL_Log("Window size: %ix%i", width, height);
-        SDL_Log("Back buffer size: %ix%i", backBufferWidth, backBufferHeight);
-
-        if (width != backBufferWidth){
-            SDL_Log("This is a high DPI environment.");
-        }
+    if (!SDL_ShowWindow(window)) {
+        SDL_Log("Couldn't show window: %s\n", SDL_GetError());
+        return SDL_Fail();
     }
+
+    int32_t width, height, backBufferWidth, backBufferHeight;
+
+    SDL_GetWindowSize(window, &width, &height);
+    SDL_GetWindowSizeInPixels(window, &backBufferWidth, &backBufferHeight);
+    SDL_Log("Window size: %ix%i", width, height);
+    SDL_Log("Back buffer size: %ix%i", backBufferWidth, backBufferHeight);
+
+    if (width != backBufferWidth){
+        SDL_Log("This is a high DPI environment.");
+    }
+
+#ifdef _WIN32
+    const SDL_PropertiesID props = SDL_GetWindowProperties(window);
+    const auto hwnd = static_cast<HWND>(SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+#endif
 
     *appstate = new AppContext{
         .window = window,
         .renderer = renderer,
         .mixer = mixer,
         .audioTrack = audioTrack,
+#ifdef _WIN32
+        .windowHandle = hwnd,
+#endif
     };
 
     // pointers are pain, no clue wtf is going on here
@@ -131,6 +141,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     SDL_SetRenderScale(renderer, scale, scale);
 
     game->loadResources(&context);
+    SDL_SetWindowsMessageHook(HandleWindowsMessage, appstate);
 
     return SDL_APP_CONTINUE;
 }
@@ -138,7 +149,9 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event* event) {
     auto* app = static_cast<AppContext *>(appstate);
 
+#ifndef _WIN32
     ImGui_ImplSDL3_ProcessEvent(event);
+#endif
 
     if (event->type == SDL_EVENT_QUIT) {
         app->appQuit = SDL_APP_SUCCESS;
@@ -241,4 +254,15 @@ void SDL_AppQuit(void* appstate, const SDL_AppResult result) {
     TTF_Quit();
     SDL_Log("Application quit successfully!");
     SDL_Quit();
+}
+
+bool HandleWindowsMessage(void* appstate, MSG* msg) {
+    UNUSED(appstate);
+
+    if (msg->message == WM_COMMAND) {
+        menuBar->handleWin32Event(*msg);
+        return false;
+    }
+
+    return true;
 }

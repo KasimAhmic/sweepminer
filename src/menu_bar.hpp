@@ -13,6 +13,10 @@ public:
     [[nodiscard]] float getHeight() const { return this->height; }
     void setHeight(const float height) { this->height = height; }
 
+#ifdef _WIN32
+    void handleWin32Event(MSG msg);
+#endif
+
 private:
     enum class Toggle {
         MARKS,
@@ -26,6 +30,6 @@ private:
     void handleNewGame(const char* label, const char* shortcut, const Difficulty &difficulty) const;
     void handleToggle(const char* label, const MenuBar::Toggle &toggle) const;
     void handleHighScoreWindow() const;
-    void handleExternalLink(const char* label, const char* url) ;
-    void handleExit() ;
+    void handleExternalLink(const char* label, const char* url);
+    void handleExit();
 };

@@ -4,6 +4,95 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 
+#ifdef _WIN32
+MenuBar::MenuBar(Game* game): game(game), height(0) {
+    const HMENU hMenu = CreateMenu();
+    const HMENU hMenuGame = CreateMenu();
+    const HMENU hMenuHelp = CreateMenu();
+
+    AppendMenuW(hMenuGame, MF_STRING, 1, L"New");
+    AppendMenuW(hMenuGame, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hMenuGame, MF_STRING, 2, L"Beginner");
+    AppendMenuW(hMenuGame, MF_STRING, 3, L"Intermediate");
+    AppendMenuW(hMenuGame, MF_STRING, 4, L"Expert");
+    AppendMenuW(hMenuGame, MF_STRING, 5, L"Custom...");
+    AppendMenuW(hMenuGame, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hMenuGame, MF_STRING, 6, L"Marks (?)");
+    AppendMenuW(hMenuGame, MF_STRING, 7, L"Color");
+    AppendMenuW(hMenuGame, MF_STRING, 8, L"Sound");
+    AppendMenuW(hMenuGame, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hMenuGame, MF_STRING, 9, L"Best Times...");
+    AppendMenuW(hMenuGame, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hMenuGame, MF_STRING, 10, L"Exit...");
+
+    AppendMenuW(hMenuHelp, MF_STRING, 11, L"GitHub");
+    AppendMenuW(hMenuHelp, MF_STRING, 12, L"Report an Issue");
+    AppendMenuW(hMenuHelp, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hMenuHelp, MF_STRING, 13, L"About...");
+
+    AppendMenuW(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuGame), L"Game");
+    AppendMenuW(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuHelp), L"Help");
+
+    SetMenu(game->getContext().windowHandle, hMenu);
+}
+
+void MenuBar::handleWin32Event(MSG msg) {
+    if (msg.message == WM_COMMAND) {
+        const int id = LOWORD(msg.wParam);
+
+        switch (id) {
+            case 1: // New
+                this->game->newGame(Difficulty::BEGINNER, this->getHeight());
+                break;
+
+            case 2: // Beginner
+                this->game->newGame(Difficulty::BEGINNER, this->getHeight());
+                break;
+
+            case 3: // Intermediate
+                this->game->newGame(Difficulty::INTERMEDIATE, this->getHeight());
+                break;
+
+            case 4: // Expert
+                this->game->newGame(Difficulty::EXPERT, this->getHeight());
+                break;
+
+            case 5: // Custom...
+                break;
+
+            case 6: // Marks (?)
+                SDL_Log("Toggling marks");
+                break;
+
+            case 7: // Color
+                SDL_Log("Toggling color");
+                break;
+
+            case 8: // Sound
+                SDL_Log("Toggling sound");
+                break;
+
+            case 9: // Best Times...
+                this->game->openHighScoreWindow();
+                break;
+
+            case 10: { // Exit...
+                SDL_Event event{ .type = SDL_EVENT_QUIT };
+                SDL_PushEvent(&event);
+                break;
+            }
+
+            case 11: // GitHub
+                SDL_OpenURL("");
+                break;
+        }
+    }
+}
+
+void MenuBar::draw(SDL_Renderer *renderer) {}
+
+#else
+
 MenuBar::MenuBar(Game* game): game(game), height(0) {
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -113,3 +202,4 @@ void MenuBar::handleExit() {
         SDL_PushEvent(&event);
     }
 }
+#endif

@@ -42,6 +42,7 @@ public:
 
     [[nodiscard]] Cell* getHoveredCell() const;
     [[nodiscard]] SDL_FRect getGameSize() const;
+    [[nodiscard]] AppContext getContext() const { return this->context; }
     [[nodiscard]] uint8_t getColumns() const { return this->columns; }
     [[nodiscard]] uint8_t getRows() const { return this->rows; }
     [[nodiscard]] uint16_t getMines() const { return this->mines; }
