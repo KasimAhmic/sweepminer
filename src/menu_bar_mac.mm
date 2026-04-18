@@ -28,7 +28,7 @@ public:
         this->handler.cppInstance = this;
     }
 
-    int32_t addMenu(const int32_t id, const char* title) override {
+    void addMenu(const int32_t id, const char* title) override {
         NSString* nsTitle = [NSString stringWithUTF8String:title];
 
         NSMenuItem* menu = [[NSMenuItem alloc] initWithTitle:nsTitle
@@ -40,10 +40,9 @@ public:
         [menu setSubmenu:subMenu];
 
         this->menuIds[id] = subMenu;
-        return id;
     }
 
-    int32_t addItem(const int32_t id, int32_t parentMenuId, const char* title) override {
+    void addItem(const int32_t id, int32_t parentMenuId, const char* title) override {
         auto it = this->menuIds.find(parentMenuId);
         if (it == this->menuIds.end()) {
             return 0;
@@ -59,21 +58,12 @@ public:
         [it->second addItem:item];
 
         this->menuItemIds[id] = item;
-        return id;
     }
 
-    int32_t addItem(const int32_t id, int32_t parentMenuId, const char* title, const char* icon) override {
-        const int32_t itemId = this->addItem(id, parentMenuId, title);
-
-        this->setItemIcon(itemId, icon);
-
-        return itemId;
-    }
-
-    int32_t addSubMenu(const int32_t id, const int32_t parentMenuId, const char* title) override {
+    void addSubMenu(const int32_t id, const int32_t parentMenuId, const char* title) override {
         auto it = this->menuIds.find(parentMenuId);
         if (it == this->menuIds.end()) {
-            return 0;
+            return;
         }
 
         NSString* nsTitle = [NSString stringWithUTF8String:title];
@@ -87,31 +77,6 @@ public:
         [menu setSubmenu:subMenu];
 
         this->menuIds[id] = subMenu;
-        return id;
-    }
-
-    int32_t addSubMenu(const int32_t id, const int32_t parentMenuId, const char* title, const char* icon) override {
-        auto it = this->menuIds.find(parentMenuId);
-        if (it == this->menuIds.end()) {
-            return 0;
-        }
-
-        NSString* nsTitle = [NSString stringWithUTF8String:title];
-
-        NSMenuItem* menu = [[NSMenuItem alloc] initWithTitle:nsTitle
-                                                      action:nil
-                                               keyEquivalent:@""];
-        [it->second addItem:menu];
-
-        NSMenu* subMenu = [[NSMenu alloc] initWithTitle:[NSString stringWithUTF8String:title]];
-        [menu setSubmenu:subMenu];
-
-        this->menuIds[id] = subMenu;
-        this->menuItemIds[id] = menu;
-
-        this->setItemIcon(id, icon);
-
-        return id;
     }
 
     void addSeparator(int32_t parentMenuId) override {
@@ -121,19 +86,6 @@ public:
         }
 
         [it->second addItem:[NSMenuItem separatorItem]];
-    }
-
-    void setItemIcon(int32_t id, const char* icon) override {
-        auto it = this->menuItemIds.find(id);
-        if (it == this->menuItemIds.end()) {
-            return;
-        }
-
-        NSString* symbolName = [NSString stringWithUTF8String:icon];
-        NSImage* image = [NSImage imageWithSystemSymbolName:symbolName
-                                   accessibilityDescription:nil];
-
-        [it->second setImage:image];
     }
 
     void handleMenuClick(int32_t itemId) override {

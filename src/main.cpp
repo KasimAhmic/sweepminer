@@ -1,7 +1,7 @@
 #define SDL_MAIN_USE_CALLBACKS 1
-#define SWEEPMINER_ENABLE_PROFILER 1
 
 #include <exception>
+
 #include <SDL3/SDL_main.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_mixer/SDL_mixer.h>
@@ -21,6 +21,22 @@ struct AppState {
     IMenuBar* menuBar{};
     Profiler* profiler{};
 };
+
+#ifdef SDL_PLATFORM_WINDOWS
+#include <Windows.h>
+
+auto HandleWindowsMessage(void* userdata, MSG* msg) -> bool {
+    const auto app = static_cast<AppState*>(userdata);
+
+    if (msg->message != WM_COMMAND) {
+        return true;
+    }
+
+    app->menuBar->handleMenuClick(LOWORD(msg->wParam));
+
+    return false;
+}
+#endif
 
 SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     UNUSED(argc);
@@ -79,32 +95,38 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
 
     std::unique_ptr<IMenuBar> menuBar = CreateMenuBar(window);
 
+#ifdef SDL_PLATFORM_MACOS
     menuBar->addMenu(ID_APP_MENU, "SweepMiner");
-    menuBar->addItem(ID_APP_ABOUT, ID_APP_MENU, "About", "info.circle");
-    menuBar->addItem(ID_APP_QUIT, ID_APP_MENU, "Quit", "xmark.rectangle");
-
+    menuBar->addItem(ID_APP_ABOUT, ID_APP_MENU, "About");
+    menuBar->addItem(ID_APP_QUIT, ID_APP_MENU, "Quit");
+#endif
     menuBar->addMenu(ID_GAME_MENU, "Game");
-    menuBar->addItem(ID_GAME_NEW, ID_GAME_MENU, "New Game", "gamecontroller");
-    menuBar->addItem(ID_GAME_BEGINNER, ID_GAME_MENU, "Beginner", "dial.low");
-    menuBar->addItem(ID_GAME_INTERMEDIATE, ID_GAME_MENU, "Intermediate", "dial.medium");
-    menuBar->addItem(ID_GAME_EXPERT, ID_GAME_MENU, "Expert", "dial.high");
+    menuBar->addItem(ID_GAME_NEW, ID_GAME_MENU, "New Game");
+    menuBar->addSeparator(ID_GAME_MENU);
+    menuBar->addItem(ID_GAME_BEGINNER, ID_GAME_MENU, "Beginner");
+    menuBar->addItem(ID_GAME_INTERMEDIATE, ID_GAME_MENU, "Intermediate");
+    menuBar->addItem(ID_GAME_EXPERT, ID_GAME_MENU, "Expert");
     menuBar->addItem(ID_GAME_CUSTOM, ID_GAME_MENU, "Custom...");
     menuBar->addSeparator(ID_GAME_MENU);
     menuBar->addItem(ID_GAME_MARKS, ID_GAME_MENU, "Marks (?)");
     menuBar->addItem(ID_GAME_COLOR, ID_GAME_MENU, "Color");
-    menuBar->addItem(ID_GAME_SOUND, ID_GAME_MENU, "Sound", "speaker.wave.3");
+    menuBar->addItem(ID_GAME_SOUND, ID_GAME_MENU, "Sound");
     menuBar->addSeparator(ID_GAME_MENU);
-    menuBar->addItem(ID_GAME_HIGHSCORES, ID_GAME_MENU, "Best Times...", "medal");
+    menuBar->addItem(ID_GAME_HIGHSCORES, ID_GAME_MENU, "Best Times...");
+#ifdef SDL_PLATFORM_WINDOWS
+    menuBar->addSeparator(ID_GAME_MENU);
+    menuBar->addItem(ID_GAME_EXIT, ID_GAME_MENU, "Exit");
+#endif
 
     menuBar->addMenu(ID_VIEW_MENU, "View");
-    menuBar->addSubMenu(ID_VIEW_ZOOM_MENU, ID_VIEW_MENU, "Zoom", "magnifyingglass");
-    menuBar->addItem(ID_VIEW_ZOOM_IN, ID_VIEW_ZOOM_MENU, "Zoom In", "plus.magnifyingglass");
-    menuBar->addItem(ID_VIEW_ZOOM_OUT, ID_VIEW_ZOOM_MENU, "Zoom Out", "minus.magnifyingglass");
+    menuBar->addSubMenu(ID_VIEW_ZOOM_MENU, ID_VIEW_MENU, "Zoom");
+    menuBar->addItem(ID_VIEW_ZOOM_IN, ID_VIEW_ZOOM_MENU, "Zoom In");
+    menuBar->addItem(ID_VIEW_ZOOM_OUT, ID_VIEW_ZOOM_MENU, "Zoom Out");
     menuBar->addItem(ID_VIEW_ZOOM_RESET, ID_VIEW_ZOOM_MENU, "Reset Zoom");
 
     menuBar->addMenu(ID_HELP_MENU, "Help");
-    menuBar->addItem(ID_HELP_GITHUB, ID_HELP_MENU, "GitHub", "globe");
-    menuBar->addItem(ID_HELP_REPORT_ISSUE, ID_HELP_MENU, "Report an Issue", "exclamationmark.bubble");
+    menuBar->addItem(ID_HELP_GITHUB, ID_HELP_MENU, "GitHub");
+    menuBar->addItem(ID_HELP_REPORT_ISSUE, ID_HELP_MENU, "Report an Issue");
 
     Events::init();
 
@@ -126,6 +148,10 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
             .menuBar = menuBar.release(),
             .profiler = profiler,
         };
+
+#ifdef SDL_PLATFORM_WINDOWS
+        SDL_SetWindowsMessageHook(HandleWindowsMessage, *appstate);
+#endif
     } catch (const std::exception& e) {
         MIX_Quit();
         TTF_Quit();
@@ -166,6 +192,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
         SDL_RenderClear(app->game->getContext().getRenderer());
 
         app->game->render(app->deltaTime);
+        app->menuBar->render();
 
         SDL_RenderPresent(app->game->getContext().getRenderer());
     })

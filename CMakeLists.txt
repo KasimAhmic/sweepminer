@@ -86,31 +86,44 @@ add_executable(${PROJECT_NAME} WIN32 src/main.cpp
         src/textures.hpp
         src/events.hpp)
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE SWEEPMINER_ENABLE_PROFILER=1)
-
-add_library(imgui STATIC
-        external/imgui/imgui.cpp
-        external/imgui/imgui_draw.cpp
-        external/imgui/imgui_tables.cpp
-        external/imgui/imgui_widgets.cpp
-        external/imgui/backends/imgui_impl_sdl3.cpp
-        external/imgui/backends/imgui_impl_sdlrenderer3.cpp)
-
-target_include_directories(imgui PUBLIC
-        external/imgui
-        external/imgui/backends)
+target_compile_definitions(${PROJECT_NAME} PRIVATE SWEEPMINER_ENABLE_PROFILER=0)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_ttf::SDL3_ttf)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_image::SDL3_image)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_mixer::SDL3_mixer)
-target_link_libraries(${PROJECT_NAME} PRIVATE imgui)
-target_link_libraries(imgui PRIVATE SDL3::SDL3)
-target_compile_features(imgui PRIVATE cxx_std_23)
 
-if(APPLE)
+if (APPLE)
     target_sources(${PROJECT_NAME} PRIVATE src/menu_bar_mac.mm src/mac_menu.mm)
     target_link_libraries(${PROJECT_NAME} PRIVATE "-framework Cocoa")
+elseif (WIN32)
+    target_sources(${PROJECT_NAME} PRIVATE src/menu_bar_win.cpp)
+    target_link_libraries(${PROJECT_NAME} PRIVATE "-lcomctl32")
+else ()
+    add_library(imgui STATIC
+            external/imgui/imgui.cpp
+            external/imgui/imgui_draw.cpp
+            external/imgui/imgui_tables.cpp
+            external/imgui/imgui_widgets.cpp
+            external/imgui/backends/imgui_impl_sdl3.cpp
+            external/imgui/backends/imgui_impl_sdlrenderer3.cpp)
+
+    target_include_directories(imgui PUBLIC
+            external/imgui
+            external/imgui/backends)
+
+    target_sources(${PROJECT_NAME} PRIVATE src/menu_bar_imgui.cpp)
+
+    target_link_libraries(${PROJECT_NAME} PRIVATE imgui)
+    target_link_libraries(imgui PRIVATE SDL3::SDL3)
+
+    target_compile_features(imgui PRIVATE cxx_std_23)
+
+    if (MSVC)
+        target_compile_options(imgui PRIVATE $<$<CONFIG:Release>:/O2>)
+    else ()
+        target_compile_options(imgui PRIVATE $<$<CONFIG:Release>:-O3>)
+    endif ()
 endif()
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -122,8 +135,6 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
 
 if (MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:/O2>)
-    target_compile_options(imgui PRIVATE $<$<CONFIG:Release>:/O2>)
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:-O3>)
-    target_compile_options(imgui PRIVATE $<$<CONFIG:Release>:-O3>)
 endif()

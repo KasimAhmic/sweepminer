@@ -1,5 +1,6 @@
 #include "cell_grid.hpp"
 
+#include <array>
 #include <queue>
 #include <random>
 #include <unordered_set>
@@ -143,8 +144,6 @@ void CellGrid::handleEvent(const SDL_Event &event) const {
     if (event.user.type == Events::REVEAL_CELL) {
         const auto [row, column] = Events::GetRevealedCell(event);
         this->revealConnectedCells(row, column);
-    } else if (event.user.type == Events::MENU_EVENT) {
-        SDL_Log("Menu event: %d", event.user.code);
     }
 }
 

@@ -10,7 +10,7 @@ namespace Events {
     inline uint32_t REVEAL_CELL = 0;
     inline uint32_t WIN_GAME = 0;
     inline uint32_t LOSE_GAME = 0;
-    inline uint32_t MENU_EVENT = 0;
+    inline uint32_t MENU_CLICK = 0;
 
     inline void init() {
         if (initialized) {
@@ -21,7 +21,7 @@ namespace Events {
         REVEAL_CELL = SDL_RegisterEvents(1);
         WIN_GAME = SDL_RegisterEvents(1);
         LOSE_GAME = SDL_RegisterEvents(1);
-        MENU_EVENT = SDL_RegisterEvents(1);
+        MENU_CLICK = SDL_RegisterEvents(1);
 
         initialized = true;
     }

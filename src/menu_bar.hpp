@@ -2,9 +2,6 @@
 
 #include <memory>
 
-#include <SDL3/SDL.h>
-
-// TODO: Move elsewhere
 enum Menu {
     ID_APP_MENU = 100,
     ID_APP_ABOUT,
@@ -20,6 +17,7 @@ enum Menu {
     ID_GAME_COLOR,
     ID_GAME_SOUND,
     ID_GAME_HIGHSCORES,
+    ID_GAME_EXIT,
 
     ID_VIEW_MENU,
     ID_VIEW_ZOOM_MENU,
@@ -38,18 +36,15 @@ public:
     explicit IMenuBar(SDL_Window* window): window(window) {}
     virtual ~IMenuBar() = default;
 
-    virtual int32_t addMenu(int32_t id, const char* title) = 0;
-    virtual int32_t addItem(int32_t id, int32_t parentMenuId, const char* title) = 0;
-    virtual int32_t addItem(int32_t id, int32_t parentMenuId, const char* title, const char* icon) = 0;
-    virtual int32_t addSubMenu(int32_t id, int32_t parentMenuId, const char* title) = 0;
-    virtual int32_t addSubMenu(int32_t id, int32_t parentMenuId, const char* title, const char* icon) = 0;
-    virtual void setItemIcon(int32_t id, const char* icon) = 0;
+    virtual void addMenu(int32_t id, const char* title) = 0;
+    virtual void addItem(int32_t id, int32_t parentMenuId, const char* title) = 0;
+    virtual void addSubMenu(int32_t id, int32_t parentMenuId, const char* title) = 0;
     virtual void addSeparator(int32_t parentMenuId) = 0;
-
     virtual void handleMenuClick(int32_t itemId) = 0;
+    virtual void render() {}
 
 protected:
-    SDL_Window* window;
+    SDL_Window* window{};
 };
 
 std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window);
