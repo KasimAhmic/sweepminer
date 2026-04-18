@@ -45,7 +45,7 @@ public:
     void addItem(const int32_t id, int32_t parentMenuId, const char* title) override {
         auto it = this->menuIds.find(parentMenuId);
         if (it == this->menuIds.end()) {
-            return 0;
+            return;
         }
 
         NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:title]
@@ -89,7 +89,7 @@ public:
     }
 
     void handleMenuClick(int32_t itemId) override {
-        SDL_Event event = Events::CreateSweepMinerEvent(Events::MENU_EVENT, itemId);
+        SDL_Event event = Events::CreateSweepMinerEvent(Events::MENU_CLICK, itemId);
         SDL_PushEvent(&event);
     }
 
