@@ -6,11 +6,16 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
+#ifdef SWEEPMINER_PLATFORM_OTHER
+#include <imgui_impl_sdl3.h>
+#endif
+
 #include "color.hpp"
 #include "events.hpp"
 #include "game.hpp"
 #include "util.hpp"
 #include "profiler.hpp"
+#include "menu_bar.hpp"
 
 #define UNUSED(x) (void)(x)
 
@@ -22,10 +27,10 @@ struct AppState {
     Profiler* profiler{};
 };
 
-#ifdef SDL_PLATFORM_WINDOWS
+#ifdef SWEEPMINER_PLATFORM_WINDOWS
 #include <Windows.h>
 
-auto HandleWindowsMessage(void* userdata, MSG* msg) -> bool {
+bool HandleWindowsMessage(void* userdata, MSG* msg) {
     const auto app = static_cast<AppState*>(userdata);
 
     if (msg->message != WM_COMMAND) {
@@ -95,7 +100,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
 
     std::unique_ptr<IMenuBar> menuBar = CreateMenuBar(window);
 
-#ifdef SDL_PLATFORM_MACOS
+#ifdef SWEEPMINER_PLATFORM_MACOS
     menuBar->addMenu(ID_APP_MENU, "SweepMiner");
     menuBar->addItem(ID_APP_ABOUT, ID_APP_MENU, "About");
     menuBar->addItem(ID_APP_QUIT, ID_APP_MENU, "Quit");
@@ -113,7 +118,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     menuBar->addItem(ID_GAME_SOUND, ID_GAME_MENU, "Sound");
     menuBar->addSeparator(ID_GAME_MENU);
     menuBar->addItem(ID_GAME_HIGHSCORES, ID_GAME_MENU, "Best Times...");
-#ifdef SDL_PLATFORM_WINDOWS
+#ifndef SWEEPMINER_PLATFORM_MACOS
     menuBar->addSeparator(ID_GAME_MENU);
     menuBar->addItem(ID_GAME_EXIT, ID_GAME_MENU, "Exit");
 #endif
@@ -131,7 +136,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     Events::init();
 
     try {
-        auto game = std::make_unique<Game>(window, renderer, textEngine, mixer, track);
+        auto game = std::make_unique<Game>(window, renderer, textEngine, mixer, track, menuBar->getHeight());
 
         game->init();
 
@@ -149,7 +154,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
             .profiler = profiler,
         };
 
-#ifdef SDL_PLATFORM_WINDOWS
+#ifdef SWEEPMINER_PLATFORM_WINDOWS
         SDL_SetWindowsMessageHook(HandleWindowsMessage, *appstate);
 #endif
     } catch (const std::exception& e) {
@@ -170,6 +175,39 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 
     if (event->type == SDL_EVENT_QUIT) {
         return SDL_APP_SUCCESS;
+    }
+
+#ifdef SWEEPMINER_PLATFORM_OTHER
+    if (ImGui::GetIO().WantCaptureMouse && ImGui_ImplSDL3_ProcessEvent(event)) {
+        return SDL_APP_CONTINUE;
+    }
+#endif
+
+    if (event->type == Events::MENU_CLICK) {
+        const int32_t code = event->user.code;
+
+        if (code == ID_GAME_EXIT || code == ID_APP_QUIT) {
+            return SDL_APP_SUCCESS;
+        }
+
+        if (code == ID_GAME_NEW) {
+            app->game->start();
+        } else if (code == ID_GAME_BEGINNER) {
+            app->game->setDifficulty(Game::Difficulty::BEGINNER);
+            app->game->start();
+        } else if (code == ID_GAME_INTERMEDIATE) {
+            app->game->setDifficulty(Game::Difficulty::INTERMEDIATE);
+            app->game->start();
+        } else if (code == ID_GAME_EXPERT) {
+            app->game->setDifficulty(Game::Difficulty::EXPERT);
+            app->game->start();
+        } else if (code == ID_HELP_GITHUB) {
+            SDL_OpenURL("https://github.com/KasimAhmic/SweepMiner");
+        } else if (code == ID_HELP_REPORT_ISSUE) {
+            SDL_OpenURL("https://github.com/KasimAhmic/SweepMiner/issues");
+        }
+
+        return SDL_APP_CONTINUE;
     }
 
     app->game->handleEvent(*event);

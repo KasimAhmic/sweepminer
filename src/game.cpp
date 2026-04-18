@@ -6,10 +6,11 @@
 #include "util.hpp"
 #include "events.hpp"
 #include "profiler.hpp"
+#include "menu_bar.hpp"
 
-Game::Game(SDL_Window* window, SDL_Renderer* renderer, TTF_TextEngine* textEngine, MIX_Mixer* mixer, MIX_Track* track) {
-    this->context = std::make_unique<Context>(window, renderer, textEngine, mixer, track, SCALE, SDL_GetWindowDisplayScale(window));
-}
+Game::Game(SDL_Window* window, SDL_Renderer* renderer, TTF_TextEngine* textEngine, MIX_Mixer* mixer, MIX_Track* track, const float menuBarHeight)
+    : context(std::make_unique<Context>(window, renderer, textEngine, mixer, track, SCALE, SDL_GetWindowDisplayScale(window))),
+      menuBarHeight(menuBarHeight) {}
 
 Game::~Game() = default;
 
@@ -22,7 +23,7 @@ void Game::init() {
 
     manager.loadSound(ResourceManager::Sound::CLICK, "assets/sounds/click.wav");
     manager.loadSound(ResourceManager::Sound::FLAG, "assets/sounds/flag.wav");
-    manager.loadSound(ResourceManager::Sound::EXPLODE, "assets/sounds/explosion.wav");
+    manager.loadSound(ResourceManager::Sound::EXPLODE, "assets/sounds/explode.wav");
 
     manager.loadFont(ResourceManager::Font::SOURCE_CODE_PRO, "assets/fonts/SourceCodePro-Medium.ttf", Profiler::FONT_SIZE);
 
@@ -64,7 +65,7 @@ void Game::start() {
 
     const SDL_FRect backgroundRect{
         .x = 0,
-        .y = 0,
+        .y = this->menuBarHeight,
         .w = cellGridWidth + PADDING * 2,
         .h = ScoreBoard::HEIGHT + cellGridHeight + PADDING * 3,
     };
@@ -88,7 +89,7 @@ void Game::start() {
     SDL_SetWindowSize(
         this->getContext().getWindow(),
         static_cast<int>(backgroundRect.w),
-        static_cast<int>(backgroundRect.h));
+        static_cast<int>(backgroundRect.h + this->menuBarHeight));
 }
 
 void Game::handleEvent(const SDL_Event &event) {

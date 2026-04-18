@@ -5,7 +5,6 @@
 #include "box.hpp"
 #include "cell_grid.hpp"
 #include "context.hpp"
-#include "menu_bar.hpp"
 #include "profiler.hpp"
 #include "score_board.hpp"
 
@@ -24,7 +23,7 @@ public:
         EXPERT
     };
 
-    explicit Game(SDL_Window* window, SDL_Renderer* renderer, TTF_TextEngine* textEngine, MIX_Mixer* mixer, MIX_Track* track);
+    explicit Game(SDL_Window* window, SDL_Renderer* renderer, TTF_TextEngine* textEngine, MIX_Mixer* mixer, MIX_Track* track, float menuBarHeight);
     ~Game();
 
     [[nodiscard]] Context& getContext() const { return *this->context; }
@@ -46,10 +45,11 @@ private:
     static constexpr float SCALE = 1.0f;
 
     std::unique_ptr<Context> context;
+    float menuBarHeight;
+
     State state = State::NEW;
     Difficulty difficulty = Difficulty::BEGINNER;
     std::unique_ptr<Box> background;
     std::unique_ptr<ScoreBoard> scoreBoard;
     std::unique_ptr<CellGrid> cellGrid;
-    std::unique_ptr<IMenuBar> menuBar;
 };

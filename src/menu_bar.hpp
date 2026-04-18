@@ -43,8 +43,11 @@ public:
     virtual void handleMenuClick(int32_t itemId) = 0;
     virtual void render() {}
 
+    [[nodiscard]] float getHeight() const { return this->height; }
+
 protected:
     SDL_Window* window{};
+    float height{};
 };
 
 std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window);

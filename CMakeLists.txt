@@ -94,12 +94,18 @@ target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_image::SDL3_image)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_mixer::SDL3_mixer)
 
 if (APPLE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SWEEPMINER_PLATFORM_MACOS=1)
+
     target_sources(${PROJECT_NAME} PRIVATE src/menu_bar_mac.mm src/mac_menu.mm)
     target_link_libraries(${PROJECT_NAME} PRIVATE "-framework Cocoa")
 elseif (WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SWEEPMINER_PLATFORM_WINDOWS=1)
+
     target_sources(${PROJECT_NAME} PRIVATE src/menu_bar_win.cpp)
     target_link_libraries(${PROJECT_NAME} PRIVATE "-lcomctl32")
 else ()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SWEEPMINER_PLATFORM_OTHER=1)
+
     add_library(imgui STATIC
             external/imgui/imgui.cpp
             external/imgui/imgui_draw.cpp
