@@ -96,7 +96,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_mixer::SDL3_mixer)
 if (APPLE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE SWEEPMINER_PLATFORM_MACOS=1)
 
-    target_sources(${PROJECT_NAME} PRIVATE src/menu_bar_mac.mm src/mac_menu.mm)
+    target_sources(${PROJECT_NAME} PRIVATE src/menu_bar_mac.mm)
     target_link_libraries(${PROJECT_NAME} PRIVATE "-framework Cocoa")
 elseif (WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE SWEEPMINER_PLATFORM_WINDOWS=1)
