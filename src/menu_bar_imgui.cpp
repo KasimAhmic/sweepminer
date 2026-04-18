@@ -47,19 +47,7 @@ public:
 
     }
 
-    void addItem(const int32_t id, const int32_t parentMenuId, const char* title, const char* icon) override {
-
-    }
-
     void addSubMenu(const int32_t id, const int32_t parentMenuId, const char* title) override {
-
-    }
-
-    void addSubMenu(const int32_t id, const int32_t parentMenuId, const char* title, const char* icon) override {
-
-    }
-
-    void setItemIcon(const int32_t id, const char* icon) override {
 
     }
 
