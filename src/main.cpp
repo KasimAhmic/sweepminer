@@ -172,9 +172,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
         game->init();
 
 #if SWEEPMINER_ENABLE_PROFILER
-        auto* profiler = new Profiler(renderer, textEngine);
-#else
-        constexpr auto profiler = nullptr;
+        auto profiler = std::make_unique<Profiler>(renderer, textEngine);
 #endif
 
         *appstate = new AppState{
@@ -182,7 +180,11 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
             .deltaTime = 0.0,
             .game = std::move(game),
             .menuBar = std::move(menuBar),
-            .profiler = profiler,
+#if SWEEPMINER_ENABLE_PROFILER
+            .profiler = std::move(profiler),
+#else
+            .profiler = nullptr,
+#endif
         };
 
 #ifdef SWEEPMINER_PLATFORM_WINDOWS
