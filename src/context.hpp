@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
@@ -32,11 +31,8 @@ public:
     [[nodiscard]] MIX_Track* getTrack() const { return this->track; }
 
     [[nodiscard]] ResourceManager& getResourceManager() const { return *this->resourceManager; }
-    [[nodiscard]] std::vector<Component *> getComponents() const { return this->components; }
     [[nodiscard]] float getScale() const { return this->scale; }
     [[nodiscard]] float getDisplayScale() const { return this->displayScale; }
-
-    void addComponent(Component* component) { this->components.push_back(component); }
 
 private:
     SDL_Window *window;
@@ -45,7 +41,6 @@ private:
     MIX_Mixer *mixer;
     MIX_Track *track;
     std::unique_ptr<ResourceManager> resourceManager;
-    std::vector<Component*> components;
     float scale;
     float displayScale;
 };

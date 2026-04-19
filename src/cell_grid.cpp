@@ -75,8 +75,8 @@ CellGrid::CellGrid(Context *context, const SDL_FRect &rect, const uint8_t rows, 
             uint8_t surroundingMineCount = 0;
 
             for (const auto [deltaColumn, deltaRow]: EIGHT_DIR_CELL_OFFSETS) {
-                const uint8_t newRow = row + deltaRow;
-                const uint8_t newColumn = column + deltaColumn;
+                const int32_t newRow = row + deltaRow;
+                const int32_t newColumn = column + deltaColumn;
 
                 if (newRow < 0 ||
                     newRow >= this->rows ||
@@ -148,8 +148,8 @@ void CellGrid::handleEvent(const SDL_Event &event) const {
 }
 
 void CellGrid::revealConnectedCells(const uint8_t selectedCellRow, const uint8_t selectedCellColumn) const {
-    std::queue<std::pair<uint8_t, uint8_t>> queue;
-    std::unordered_set<std::pair<uint8_t, uint8_t>, PairHash> visited;
+    std::queue<std::pair<int8_t, int8_t>> queue{};
+    std::unordered_set<std::pair<int8_t, int8_t>, PairHash> visited{};
 
     queue.emplace(selectedCellRow, selectedCellColumn);
 
@@ -223,5 +223,3 @@ void CellGrid::render() {
         }
     }
 }
-
-#undef LoopOverCells

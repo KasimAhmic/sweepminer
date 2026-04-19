@@ -22,9 +22,9 @@
 struct AppState {
     uint64_t lastCounter{};
     double deltaTime{};
-    Game* game{};
-    IMenuBar* menuBar{};
-    Profiler* profiler{};
+    std::unique_ptr<Game> game{};
+    std::unique_ptr<IMenuBar> menuBar{};
+    std::unique_ptr<Profiler> profiler{};
 };
 
 #ifdef SWEEPMINER_PLATFORM_WINDOWS
@@ -43,6 +43,22 @@ bool HandleWindowsMessage(void* userdata, MSG* msg) {
 }
 #endif
 
+void SDL_QuitAll() {
+    MIX_Quit();
+    TTF_Quit();
+    SDL_Quit();
+}
+
+void SDL_DestroyAll(SDL_Window* window = nullptr,
+                    SDL_Renderer* renderer = nullptr,
+                    TTF_TextEngine* textEngine = nullptr,
+                    MIX_Mixer* mixer = nullptr) {
+    MIX_DestroyMixer(mixer);
+    TTF_DestroyRendererTextEngine(textEngine);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+}
+
 SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     UNUSED(argc);
     UNUSED(argv);
@@ -52,44 +68,59 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     SDL_SetLogPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_DEBUG);
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
+        SDL_QuitAll();
+
         return SDL_Fail("Couldn't initialize SDL");
     }
 
     if (!TTF_Init()) {
-        SDL_Quit();
+        SDL_QuitAll();
 
         return SDL_Fail("Couldn't initialize SDL_ttf");
     }
 
     if (!MIX_Init()) {
-        TTF_Quit();
-        SDL_Quit();
+        SDL_QuitAll();
 
         return SDL_Fail("Couldn't initialize SDL_mixer");
     }
 
     SDL_Window* window = SDL_CreateWindow("SweepMiner", 200, 200, SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (!window) {
+        SDL_QuitAll();
+
         return SDL_Fail("Couldn't create window");
     }
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
+        SDL_DestroyAll(window);
+        SDL_QuitAll();
+
         return SDL_Fail("Couldn't create renderer");
     }
 
     TTF_TextEngine* textEngine = TTF_CreateRendererTextEngine(renderer);
     if (!textEngine) {
+        SDL_DestroyAll(window, renderer);
+        SDL_QuitAll();
+
         return SDL_Fail("Couldn't create text engine");
     }
 
     MIX_Mixer* mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
     if (!mixer) {
+        SDL_DestroyAll(window, renderer, textEngine);
+        SDL_QuitAll();
+
         return SDL_Fail("Couldn't create mixer");
     }
 
     MIX_Track* track = MIX_CreateTrack(mixer);
     if (!track) {
+        SDL_DestroyAll(window, renderer, textEngine, mixer);
+        SDL_QuitAll();
+
         return SDL_Fail("Couldn't create track");
     }
 
@@ -149,8 +180,8 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
         *appstate = new AppState{
             .lastCounter = SDL_GetPerformanceCounter(),
             .deltaTime = 0.0,
-            .game = game.release(),
-            .menuBar = menuBar.release(),
+            .game = std::move(game),
+            .menuBar = std::move(menuBar),
             .profiler = profiler,
         };
 
@@ -243,12 +274,7 @@ void SDL_AppQuit(void* appstate, const SDL_AppResult result) {
 
     const auto app = static_cast<AppState*>(appstate);
 
-    delete app->profiler;
-    delete app->menuBar;
-    delete app->game;
     delete app;
 
-    MIX_Quit();
-    TTF_Quit();
-    SDL_Quit();
+    SDL_QuitAll();
 }

@@ -8,9 +8,7 @@ Component::Component(Context* context, const SDL_FRect& rect)
           .w = context->getDisplayScale() * rect.w,
           .h = context->getDisplayScale() * rect.h
       }),
-      bounds(rect) {
-    this->context->addComponent(this);
-}
+      bounds(rect) {}
 
 Component::~Component() = default;
 

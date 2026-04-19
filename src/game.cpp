@@ -93,40 +93,6 @@ void Game::start() {
 }
 
 void Game::handleEvent(const SDL_Event &event) {
-    if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_N) {
-        this->setDifficulty(static_cast<Difficulty>((static_cast<int>(this->getDifficulty()) + 1) % 3));
-        this->start();
-    }
-
-    if (event.type == Events::MENU_CLICK) {
-        if (event.user.code == ID_APP_MENU) SDL_Log("ID_APP_MENU: %d", ID_APP_MENU);
-        if (event.user.code == ID_APP_ABOUT) SDL_Log("ID_APP_ABOUT: %d", ID_APP_ABOUT);
-        if (event.user.code == ID_APP_QUIT) SDL_Log("ID_APP_QUIT: %d", ID_APP_QUIT);
-
-        if (event.user.code == ID_GAME_MENU) SDL_Log("ID_GAME_MENU: %d", ID_GAME_MENU);
-        if (event.user.code == ID_GAME_NEW) SDL_Log("ID_GAME_NEW: %d", ID_GAME_NEW);
-        if (event.user.code == ID_GAME_BEGINNER) SDL_Log("ID_GAME_BEGINNER: %d", ID_GAME_BEGINNER);
-        if (event.user.code == ID_GAME_INTERMEDIATE) SDL_Log("ID_GAME_INTERMEDIATE: %d", ID_GAME_INTERMEDIATE);
-        if (event.user.code == ID_GAME_EXPERT) SDL_Log("ID_GAME_EXPERT: %d", ID_GAME_EXPERT);
-        if (event.user.code == ID_GAME_CUSTOM) SDL_Log("ID_GAME_CUSTOM: %d", ID_GAME_CUSTOM);
-        if (event.user.code == ID_GAME_MARKS) SDL_Log("ID_GAME_MARKS: %d", ID_GAME_MARKS);
-        if (event.user.code == ID_GAME_COLOR) SDL_Log("ID_GAME_COLOR: %d", ID_GAME_COLOR);
-        if (event.user.code == ID_GAME_SOUND) SDL_Log("ID_GAME_SOUND: %d", ID_GAME_SOUND);
-        if (event.user.code == ID_GAME_HIGHSCORES) SDL_Log("ID_GAME_HIGHSCORES: %d", ID_GAME_HIGHSCORES);
-        if (event.user.code == ID_GAME_EXIT) SDL_Log("ID_GAME_EXIT: %d", ID_GAME_EXIT);
-
-        if (event.user.code == ID_VIEW_MENU) SDL_Log("ID_VIEW_MENU: %d", ID_VIEW_MENU);
-        if (event.user.code == ID_VIEW_ZOOM_MENU) SDL_Log("ID_VIEW_ZOOM_MENU: %d", ID_VIEW_ZOOM_MENU);
-        if (event.user.code == ID_VIEW_ZOOM_IN) SDL_Log("ID_VIEW_ZOOM_IN: %d", ID_VIEW_ZOOM_IN);
-        if (event.user.code == ID_VIEW_ZOOM_OUT) SDL_Log("ID_VIEW_ZOOM_OUT: %d", ID_VIEW_ZOOM_OUT);
-        if (event.user.code == ID_VIEW_ZOOM_RESET) SDL_Log("ID_VIEW_ZOOM_RESET: %d", ID_VIEW_ZOOM_RESET);
-
-        if (event.user.code == ID_HELP_MENU) SDL_Log("ID_HELP_MENU: %d", ID_HELP_MENU);
-        if (event.user.code == ID_HELP_GITHUB) SDL_Log("ID_HELP_GITHUB: %d", ID_HELP_GITHUB);
-        if (event.user.code == ID_HELP_REPORT_ISSUE) SDL_Log("ID_HELP_REPORT_ISSUE: %d", ID_HELP_REPORT_ISSUE);
-        if (event.user.code == ID_HELP_ABOUT) SDL_Log("ID_HELP_ABOUT: %d", ID_HELP_ABOUT);
-    }
-
     ProfileCall("Cell Grid Events", this->cellGrid->handleEvent(event));
 }
 

@@ -59,14 +59,20 @@ void Cell::render() {
 }
 
 void Cell::onMouseOver(const SDL_MouseMotionEvent& event) {
+    (void)event;
+
     this->setBackgroundColor(LIGHT_GREY);
 }
 
 void Cell::onMouseOut(const SDL_MouseMotionEvent& event) {
+    (void)event;
+
     this->setBackgroundColor(GREY);
 }
 
 void Cell::onMouseDown(const SDL_MouseButtonEvent& event) {
+    (void)event;
+
     if (this->getState() == State::HIDDEN) {
         this->setBackgroundColor(DARK_GREY);
     }
