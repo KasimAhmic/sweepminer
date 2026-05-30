@@ -7,6 +7,7 @@ public:
     static constexpr float SIZE = 25.0f;
     static constexpr float BORDER_WIDTH = 2.0f;
     static constexpr float PADDING = 4.0f;
+    static constexpr float PRESSED_OFFSET = 1.0f;
 
     enum class State : uint8_t {
         DEFAULT,

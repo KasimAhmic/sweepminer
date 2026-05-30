@@ -1,6 +1,6 @@
-#include "component.hpp"
+#include "ui_component.hpp"
 
-Component::Component(Context* context, const SDL_FRect& rect)
+UiComponent::UiComponent(Context* context, const SDL_FRect& rect)
     : context(context),
       rect(SDL_FRect{
           .x = context->getDisplayScale() * rect.x,
@@ -10,9 +10,9 @@ Component::Component(Context* context, const SDL_FRect& rect)
       }),
       bounds(rect) {}
 
-Component::~Component() = default;
+UiComponent::~UiComponent() = default;
 
-void Component::render() {
+void UiComponent::render() {
     SDL_SetRenderDrawColor(this->getContext().getRenderer(), 255, 0, 0, 255);
     SDL_RenderFillRect(this->getContext().getRenderer(), &this->getRect());
 }

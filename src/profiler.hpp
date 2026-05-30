@@ -4,7 +4,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "component.hpp"
+#include "ui_component.hpp"
 
 #if SWEEPMINER_ENABLE_PROFILER
 #define ProfileCall(label, func) Profiler::getInstance().measure(label, [&] { func; });

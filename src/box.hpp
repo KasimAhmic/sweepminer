@@ -1,9 +1,9 @@
 #pragma once
 
 #include "color.hpp"
-#include "component.hpp"
+#include "ui_component.hpp"
 
-class Box : public Component {
+class Box : public UiComponent {
 public:
     explicit Box(Context* context,
                  const SDL_FRect& rect,

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "component.hpp"
+#include <SDL3/SDL.h>
 
 class Button {
 public:

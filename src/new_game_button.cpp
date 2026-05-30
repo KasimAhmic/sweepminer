@@ -29,15 +29,15 @@ void NewGameButton::render() {
     }
 
     SDL_FRect destRect{
-        .x = Box::getRect().x + PADDING,
-        .y = Box::getRect().y + PADDING,
-        .w = TextureOffset::SMILEY_DEFAULT.w,
-        .h = TextureOffset::SMILEY_DEFAULT.h,
+        .x = Box::getRect().x + PADDING * this->getContext().getDisplayScale(),
+        .y = Box::getRect().y + PADDING * this->getContext().getDisplayScale(),
+        .w = TextureOffset::SMILEY_DEFAULT.w * this->getContext().getDisplayScale(),
+        .h = TextureOffset::SMILEY_DEFAULT.h * this->getContext().getDisplayScale(),
     };
 
     if (this->getState() == State::PRESSED) {
-        destRect.x += 1.0f;
-        destRect.y += 1.0f;
+        destRect.x += PRESSED_OFFSET * this->getContext().getDisplayScale();
+        destRect.y += PRESSED_OFFSET * this->getContext().getDisplayScale();
     }
 
     SDL_RenderTexture(

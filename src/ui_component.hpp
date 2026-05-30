@@ -1,12 +1,13 @@
 #pragma once
 
-#include "context.hpp"
-#include "SDL3/SDL_rect.h"
+#include <SDL3/SDL.h>
 
-class Component {
+#include "context.hpp"
+
+class UiComponent {
 public:
-    explicit Component(Context* context, const SDL_FRect& rect);
-    virtual ~Component();
+    explicit UiComponent(Context* context, const SDL_FRect& rect);
+    virtual ~UiComponent();
 
     virtual void render();
 

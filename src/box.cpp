@@ -6,7 +6,7 @@ Box::Box(Context* context,
          const Color& borderHighlightColor,
          const Color& borderShadowColor,
          const Color& backgroundColor)
-    : Component(context, rect),
+    : UiComponent(context, rect),
       borderWidth(borderWidth * SDL_GetWindowDisplayScale(context->getWindow())),
       borderPrimaryColor(borderHighlightColor),
       borderSecondaryColor(borderShadowColor),

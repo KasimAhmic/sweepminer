@@ -16,10 +16,10 @@ void Counter::render() {
 
     for (size_t i = 0; i < digits.size(); i++) {
         SDL_FRect dest{
-            .x = x + i * SEGMENT_WIDTH + BORDER_WIDTH,
-            .y = y + BORDER_WIDTH,
-            .w = SEGMENT_WIDTH,
-            .h = SEGMENT_HEIGHT,
+            .x = x + (i * SEGMENT_WIDTH + BORDER_WIDTH) * this->getContext().getDisplayScale(),
+            .y = y + BORDER_WIDTH * this->getContext().getDisplayScale(),
+            .w = SEGMENT_WIDTH * this->getContext().getDisplayScale(),
+            .h = SEGMENT_HEIGHT * this->getContext().getDisplayScale(),
         };
 
         SDL_RenderTexture(

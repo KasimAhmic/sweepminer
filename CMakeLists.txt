@@ -65,8 +65,8 @@ add_executable(${PROJECT_NAME} WIN32 src/main.cpp
         src/context.hpp
         src/resource_manager.cpp
         src/resource_manager.hpp
-        src/component.cpp
-        src/component.hpp
+        src/ui_component.cpp
+        src/ui_component.hpp
         src/box.cpp
         src/box.hpp
         src/color.hpp
@@ -99,6 +99,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_mixer::SDL3_mixer)
 
 if (APPLE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE SWEEPMINER_PLATFORM_MACOS=1)
+#    set_target_properties(${PROJECT_NAME} PROPERTIES
+#            MACOSX_BUNDLE_GUI_IDENTIFIER "com.ahmic.sweepminer"
+#            MACOSX_BUNDLE TRUE
+#    )
 
     target_sources(${PROJECT_NAME} PRIVATE src/menu_bar_mac.mm)
     target_link_libraries(${PROJECT_NAME} PRIVATE "-framework Cocoa")

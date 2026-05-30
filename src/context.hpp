@@ -8,8 +8,6 @@
 
 #include "resource_manager.hpp"
 
-class Component; // Forward declaration
-
 class Context {
 public:
     explicit Context(SDL_Window* window,

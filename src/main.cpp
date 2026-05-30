@@ -66,6 +66,7 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     *appstate = nullptr;
 
     SDL_SetLogPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_DEBUG);
+    SDL_SetAppMetadata("com.ahmic.sweepminer", "SweepMiner", "1.0.0");
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
         SDL_QuitAll();
