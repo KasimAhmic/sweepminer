@@ -224,16 +224,16 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
         }
 
         if (code == ID_GAME_NEW) {
-            app->game->start();
+            app->game->newGame();
         } else if (code == ID_GAME_BEGINNER) {
             app->game->setDifficulty(Game::Difficulty::BEGINNER);
-            app->game->start();
+            app->game->newGame();
         } else if (code == ID_GAME_INTERMEDIATE) {
             app->game->setDifficulty(Game::Difficulty::INTERMEDIATE);
-            app->game->start();
+            app->game->newGame();
         } else if (code == ID_GAME_EXPERT) {
             app->game->setDifficulty(Game::Difficulty::EXPERT);
-            app->game->start();
+            app->game->newGame();
         } else if (code == ID_HELP_GITHUB) {
             SDL_OpenURL("https://github.com/KasimAhmic/SweepMiner");
         } else if (code == ID_HELP_REPORT_ISSUE) {

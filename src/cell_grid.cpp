@@ -140,7 +140,6 @@ void CellGrid::handleEvent(const SDL_Event &event) const {
         }
     }
 
-
     if (event.user.type == Events::REVEAL_CELL) {
         const auto [row, column] = Events::GetRevealedCell(event);
         this->revealConnectedCells(row, column);
@@ -178,6 +177,11 @@ void CellGrid::revealConnectedCells(const uint8_t selectedCellRow, const uint8_t
         }
 
         if (!(row == selectedCellRow && column == selectedCellColumn)) {
+            if (cell->getState() == Cell::State::FLAGGED) {
+                SDL_Event event = Events::CreateMarkChangeEvent(-1);
+                SDL_PushEvent(&event);
+            }
+
             cell->setState(Cell::State::REVEALED);
         }
 
@@ -200,7 +204,7 @@ void CellGrid::render() {
     const float padding = BORDER_WIDTH * scale;
 
     for (uint8_t i = 0; i < GRID_WIDTH * this->getContext().getDisplayScale(); i++) {
-        for (uint8_t row = 1; row < rows; row++) {
+        for (uint8_t row = 0; row < rows; row++) {
             SDL_RenderLine(this->getContext().getRenderer(),
                            this->getRect().x + padding,
                            this->getRect().y + padding + static_cast<float>(row) * Cell::SIZE * scale + static_cast<float>(i),
@@ -208,7 +212,7 @@ void CellGrid::render() {
                            this->getRect().y + padding + static_cast<float>(row) * Cell::SIZE * scale + static_cast<float>(i));
         }
 
-        for (uint8_t column = 1; column < columns; column++) {
+        for (uint8_t column = 0; column < columns; column++) {
             SDL_RenderLine(this->getContext().getRenderer(),
                            this->getRect().x + padding + static_cast<float>(column) * Cell::SIZE * scale + static_cast<float>(i),
                            this->getRect().y + padding,

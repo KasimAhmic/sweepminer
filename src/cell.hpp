@@ -5,7 +5,8 @@
 
 class Cell : public Box, public Button {
 public:
-    static constexpr float SIZE = 25.0f;
+    static constexpr float SIZE = 16.0f;
+    static constexpr float BORDER_WIDTH = 2.0f;
 
     enum class State {
         HIDDEN,

@@ -10,7 +10,9 @@
 
 Game::Game(SDL_Window* window, SDL_Renderer* renderer, TTF_TextEngine* textEngine, MIX_Mixer* mixer, MIX_Track* track, const float menuBarHeight)
     : context(std::make_unique<Context>(window, renderer, textEngine, mixer, track, SCALE, SDL_GetWindowDisplayScale(window))),
-      menuBarHeight(menuBarHeight) {}
+      menuBarHeight(menuBarHeight) {
+    this->timer = std::make_unique<Timer>([this] { this->scoreBoard->tick(); }, 1000);
+}
 
 Game::~Game() = default;
 
@@ -27,15 +29,19 @@ void Game::init() {
 
     manager.loadFont(ResourceManager::Font::SOURCE_CODE_PRO, "assets/fonts/SourceCodePro-Medium.ttf", Profiler::FONT_SIZE);
 
-    this->start();
+    this->newGame();
 
     SDL_SetWindowPosition(this->getContext().getWindow(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
-void Game::start() {
+// TODO: Maybe I should make this private or handle it all in the constructor and use SDL_Event's everywhere instead
+void Game::newGame() {
+    this->timer->stop();
     this->background.reset();
     this->scoreBoard.reset();
     this->cellGrid.reset();
+
+    this->setState(State::NEW);
 
     uint8_t rows{0};
     uint8_t columns{0};
@@ -92,8 +98,36 @@ void Game::start() {
         static_cast<int>(backgroundRect.h + this->menuBarHeight));
 }
 
+void Game::endGame() {
+    this->timer->stop();
+    this->setState(State::DEFEAT);
+}
+
+void Game::start() {
+    if (this->getState() == State::NEW) {
+        this->setState(State::RUNNING);
+        this->timer->start();
+    } else {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Attempted to start game that is not in NEW state");
+    }
+}
+
 void Game::handleEvent(const SDL_Event &event) {
-    ProfileCall("Cell Grid Events", this->cellGrid->handleEvent(event));
+    ProfileCall("Score Board Events", this->scoreBoard->handleEvent(event));
+
+    if (event.type == Events::NEW_GAME) {
+        this->newGame();
+    } else if (event.type == Events::LOSE_GAME) {
+        this->endGame();
+    } else if (event.type == Events::REVEAL_CELL && this->getState() == State::NEW) {
+        this->start();
+    }
+
+    ProfileCall("Cell Grid Events", {
+        if (this->getState() != State::DEFEAT) {
+            this->cellGrid->handleEvent(event);
+        }
+    });
 }
 
 void Game::render(const double deltaTime) const {

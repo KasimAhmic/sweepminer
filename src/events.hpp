@@ -4,12 +4,16 @@
 
 #include <SDL3/SDL.h>
 
+#include "cell.hpp"
+
 namespace Events {
     inline bool initialized = false;
 
     inline uint32_t REVEAL_CELL = 0;
+    inline uint32_t MARK_CHANGE = 0;
     inline uint32_t WIN_GAME = 0;
     inline uint32_t LOSE_GAME = 0;
+    inline uint32_t NEW_GAME = 0;
     inline uint32_t MENU_CLICK = 0;
 
     inline void init() {
@@ -19,8 +23,10 @@ namespace Events {
         }
 
         REVEAL_CELL = SDL_RegisterEvents(1);
+        MARK_CHANGE = SDL_RegisterEvents(1);
         WIN_GAME = SDL_RegisterEvents(1);
         LOSE_GAME = SDL_RegisterEvents(1);
+        NEW_GAME = SDL_RegisterEvents(1);
         MENU_CLICK = SDL_RegisterEvents(1);
 
         initialized = true;
@@ -36,6 +42,10 @@ namespace Events {
 
     inline SDL_Event CreateRevealCellEvent(const uint8_t row, const uint8_t column) {
         return CreateSweepMinerEvent(Events::REVEAL_CELL, row << 8 | column);
+    }
+
+    inline SDL_Event CreateMarkChangeEvent(const int8_t direction) {
+        return CreateSweepMinerEvent(Events::MARK_CHANGE, direction);
     }
 
     inline std::pair<uint8_t, uint8_t> GetRevealedCell(const SDL_Event &event) {

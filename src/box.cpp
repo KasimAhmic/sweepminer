@@ -17,11 +17,12 @@ Box::~Box() = default;
 void Box::render() {
     const auto& renderer = this->getContext().getRenderer();
 
+    const float s = this->getContext().getScale();
     const float x = this->getRect().x;
     const float y = this->getRect().y;
     const float w = this->getRect().w;
     const float h = this->getRect().h;
-    const float b = this->getBorderWidth();
+    const float b = this->getBorderWidth() * s;
     const SDL_FColor primaryColor = this->getBorderPrimaryColor().asFloat();
     const SDL_FColor secondaryColor = this->getBorderSecondaryColor().asFloat();
 

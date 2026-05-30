@@ -84,7 +84,11 @@ add_executable(${PROJECT_NAME} WIN32 src/main.cpp
         src/button.cpp
         src/button.hpp
         src/textures.hpp
-        src/events.hpp)
+        src/events.hpp
+        src/timer.cpp
+        src/timer.hpp
+        src/new_game_button.cpp
+        src/new_game_button.hpp)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE SWEEPMINER_ENABLE_PROFILER=0)
 

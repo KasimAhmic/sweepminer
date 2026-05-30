@@ -7,6 +7,7 @@
 #include "context.hpp"
 #include "profiler.hpp"
 #include "score_board.hpp"
+#include "timer.hpp"
 
 class Game {
 public:
@@ -35,7 +36,12 @@ public:
     void setDifficulty(const Difficulty newDifficulty) { this->difficulty = newDifficulty; }
 
     void init();
+    void newGame();
+
+    void endGame();
+
     void start();
+
     void handleEvent(const SDL_Event &event);
     void render(double deltaTime) const;
 
@@ -52,4 +58,5 @@ private:
     std::unique_ptr<Box> background;
     std::unique_ptr<ScoreBoard> scoreBoard;
     std::unique_ptr<CellGrid> cellGrid;
+    std::unique_ptr<Timer> timer;
 };

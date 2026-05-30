@@ -9,7 +9,7 @@
 class CellGrid : public Box {
 public:
     static constexpr float BORDER_WIDTH = 3.0f;
-    static constexpr uint8_t GRID_WIDTH = 2;
+    static constexpr uint8_t GRID_WIDTH = 1;
 
     explicit CellGrid(Context* context, const SDL_FRect& rect, uint8_t rows, uint8_t columns, uint8_t mines);
     ~CellGrid() override;

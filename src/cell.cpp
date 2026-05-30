@@ -4,7 +4,7 @@
 #include "textures.hpp"
 
 Cell::Cell(Context *context, const SDL_FRect &rect, const uint8_t row, const uint8_t column, const bool containsMine)
-    : Box(context, rect, 3.0f, WHITE, DARK_GREY, GREY),
+    : Box(context, rect, BORDER_WIDTH, WHITE, DARK_GREY, GREY),
       Button(rect),
       state(State::HIDDEN),
       row(row),
@@ -24,7 +24,7 @@ void Cell::render() {
             this->getContext().getRenderer(),
             this->getContext().getResourceManager().getTexture(ResourceManager::Texture::CELL),
             TextureOffset::getCountTextureOffset(this->getSurroundingMines()),
-            &Component::getRect());
+            &Box::getRect());
 
         return;
     }
@@ -34,7 +34,7 @@ void Cell::render() {
             this->getContext().getRenderer(),
             this->getContext().getResourceManager().getTexture(ResourceManager::Texture::CELL),
             &TextureOffset::MINE_DETONATED,
-            &Component::getRect());
+            &Box::getRect());
 
         return;
     }
@@ -44,7 +44,7 @@ void Cell::render() {
             this->getContext().getRenderer(),
             this->getContext().getResourceManager().getTexture(ResourceManager::Texture::CELL),
             &TextureOffset::FLAG,
-            &Component::getRect());
+            &Box::getRect());
 
         return;
     }
@@ -54,7 +54,7 @@ void Cell::render() {
             this->getContext().getRenderer(),
             this->getContext().getResourceManager().getTexture(ResourceManager::Texture::CELL),
             &TextureOffset::QUESTION_MARK,
-            &Component::getRect());
+            &Box::getRect());
     }
 }
 
@@ -92,6 +92,11 @@ void Cell::onMouseUp(const SDL_MouseButtonEvent& event) {
     }
 
     if (this->getState() != State::REVEALED && !this->containsMine && event.button == SDL_BUTTON_LEFT) {
+        if (this->getState() == State::FLAGGED) {
+            SDL_Event markChangeEvent = Events::CreateMarkChangeEvent(-1);
+            SDL_PushEvent(&markChangeEvent);
+        }
+
         this->setState(State::REVEALED);
 
         MIX_SetTrackAudio(this->getContext().getTrack(), this->getContext().getResourceManager().getSound(ResourceManager::Sound::CLICK));
@@ -105,6 +110,8 @@ void Cell::onMouseUp(const SDL_MouseButtonEvent& event) {
 
     if (this->getState() == State::HIDDEN && event.button == SDL_BUTTON_RIGHT) {
         this->setState(State::FLAGGED);
+        SDL_Event markChangeEvent = Events::CreateMarkChangeEvent(1);
+        SDL_PushEvent(&markChangeEvent);
 
         MIX_SetTrackAudio(this->getContext().getTrack(), this->getContext().getResourceManager().getSound(ResourceManager::Sound::FLAG));
         MIX_PlayTrack(this->getContext().getTrack(), 0);
@@ -114,6 +121,8 @@ void Cell::onMouseUp(const SDL_MouseButtonEvent& event) {
 
     if (this->getState() == State::FLAGGED && event.button == SDL_BUTTON_RIGHT) {
         this->setState(State::QUESTIONED);
+        SDL_Event markChangeEvent = Events::CreateMarkChangeEvent(-1);
+        SDL_PushEvent(&markChangeEvent);
 
         MIX_SetTrackAudio(this->getContext().getTrack(), this->getContext().getResourceManager().getSound(ResourceManager::Sound::FLAG));
         MIX_PlayTrack(this->getContext().getTrack(), 0);
@@ -123,6 +132,9 @@ void Cell::onMouseUp(const SDL_MouseButtonEvent& event) {
 
     if (this->getState() == State::QUESTIONED && event.button == SDL_BUTTON_RIGHT) {
         this->setState(State::HIDDEN);
+        // TODO: I may still need to emit on HIDDEN but only if Marks (?) are disabled
+        // SDL_Event markChangeEvent = Events::CreateMarkCellEvent(+1);
+        // SDL_PushEvent(&markChangeEvent);
 
         MIX_SetTrackAudio(this->getContext().getTrack(), this->getContext().getResourceManager().getSound(ResourceManager::Sound::FLAG));
         MIX_PlayTrack(this->getContext().getTrack(), 0);
