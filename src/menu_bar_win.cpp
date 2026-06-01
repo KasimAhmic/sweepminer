@@ -52,6 +52,7 @@ public:
         SDL_SetWindowsMessageHook(nullptr, nullptr);
 
         if (this->menuHandle) {
+            SetMenu(this->windowHandle, nullptr);
             DestroyMenu(this->menuHandle);
         }
     }

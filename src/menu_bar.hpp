@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <SDL3/SDL.h>
+
 class IMenuBar {
 public:
     explicit IMenuBar(SDL_Window* window, const uint32_t menuEventId): window(window), menuEventId(menuEventId) {}

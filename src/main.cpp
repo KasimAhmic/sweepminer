@@ -173,7 +173,9 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     menuBar->addItem(ID_VIEW_ZOOM_RESET, ID_VIEW_ZOOM_MENU, "Reset Zoom");
 
     menuBar->addMenu(ID_HELP_MENU, "Help");
+#ifndef SWEEPMINER_PLATFORM_MACOS
     menuBar->addItem(ID_HELP_ABOUT, ID_HELP_MENU, "About");
+#endif
     menuBar->addItem(ID_HELP_GITHUB, ID_HELP_MENU, "GitHub");
     menuBar->addItem(ID_HELP_REPORT_ISSUE, ID_HELP_MENU, "Report an Issue");
 

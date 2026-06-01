@@ -133,7 +133,10 @@ public:
     }
 
     bool processMenuEvent(SDL_Event *event) override {
-        return ImGui::GetIO().WantCaptureMouse && ImGui_ImplSDL3_ProcessEvent(event);
+        const bool processed = ImGui_ImplSDL3_ProcessEvent(event);
+        const ImGuiIO& io = ImGui::GetIO();
+
+        return processed && (io.WantCaptureMouse || io.WantCaptureKeyboard);
     }
 
     void render() override {
