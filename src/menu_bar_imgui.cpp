@@ -1,5 +1,6 @@
-#include <string>
+#if SWEEPMINER_PLATFORM_OTHER
 
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -10,13 +11,12 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 
-#include "events.hpp"
 #include "menu_bar.hpp"
 
 class MenuBar : public IMenuBar {
 public:
-    explicit MenuBar(SDL_Window* window)
-        : IMenuBar(window),
+    explicit MenuBar(SDL_Window* window, const uint32_t menuEventId)
+        : IMenuBar(window, menuEventId),
           renderer(SDL_GetRenderer(window)) {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -132,9 +132,8 @@ public:
         });
     }
 
-    void handleMenuClick(const int32_t itemId) override {
-        SDL_Event event = Events::CreateSweepMinerEvent(Events::MENU_CLICK, itemId);
-        SDL_PushEvent(&event);
+    bool processMenuEvent(SDL_Event *event) override {
+        return ImGui::GetIO().WantCaptureMouse && ImGui_ImplSDL3_ProcessEvent(event);
     }
 
     void render() override {
@@ -224,13 +223,15 @@ private:
         }
     }
 
-    void renderItem(const Item& item) {
+    void renderItem(const Item& item) const {
         if (ImGui::MenuItem(item.title.c_str())) {
             this->handleMenuClick(item.id);
         }
     }
 };
 
-std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window) {
-    return std::make_unique<MenuBar>(window);
+std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window, const uint32_t menuEventId) {
+    return std::make_unique<MenuBar>(window, menuEventId);
 }
+
+#endif
