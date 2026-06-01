@@ -89,6 +89,10 @@ public:
         [it->second addItem:[NSMenuItem separatorItem]];
     }
 
+    void dispatchMenuClick(const int32_t itemId) const {
+        this->handleMenuClick(itemId);
+    }
+
 private:
     NSWindow* nsWindow;
     NSMenu* mainMenu;
@@ -107,9 +111,9 @@ std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window, const uint32_t menuE
     auto item = static_cast<NSMenuItem*>(sender);
     NSInteger tag = [item tag];
 
-    const auto menuBar = static_cast<MenuBar>(self.cppInstance);
+    auto menuBar = static_cast<MenuBar*>(self.cppInstance);
 
-    menuBar->handleMenuClick(static_cast<int32_t>(tag));
+    menuBar->dispatchMenuClick(static_cast<int32_t>(tag));
 }
 
 @end
