@@ -1,3 +1,5 @@
+#if SWEEPMINER_PLATFORM_WINDOWS
+
 #include <algorithm>
 #include <string>
 #include <unordered_map>
@@ -8,7 +10,6 @@
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
 
-#include "events.hpp"
 #include "menu_bar.hpp"
 
 #define TryWithError(expr, message)                                                \
@@ -25,7 +26,7 @@
 
 class MenuBar : public IMenuBar {
 public:
-    explicit MenuBar(SDL_Window* window): IMenuBar(window) {
+    explicit MenuBar(SDL_Window* window, const uint32_t menuEventId): IMenuBar(window, menuEventId) {
         const SDL_PropertiesID props = SDL_GetWindowProperties(window);
 
         this->windowHandle = static_cast<HWND>(SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
@@ -43,6 +44,29 @@ public:
         if (!SetMenu(this->windowHandle, this->menuHandle)) {
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Failed to set menu: %lu", GetLastError());
         }
+
+        SDL_SetWindowsMessageHook(MenuBar::handleWindowsMessage, this);
+    }
+
+    ~MenuBar() override {
+        SDL_SetWindowsMessageHook(nullptr, nullptr);
+
+        if (this->menuHandle) {
+            SetMenu(this->windowHandle, nullptr);
+            DestroyMenu(this->menuHandle);
+        }
+    }
+
+    static bool handleWindowsMessage(void* userdata, MSG* msg) {
+        const auto menuBar = static_cast<MenuBar*>(userdata);
+
+        if (msg->message != WM_COMMAND) {
+            return true;
+        }
+
+        menuBar->handleMenuClick(LOWORD(msg->wParam));
+
+        return false;
     }
 
     void addMenu(const int32_t id, const char* title) override {
@@ -86,11 +110,6 @@ public:
         AppendMenuW(this->menuIds[parentMenuId], MF_SEPARATOR, 0, nullptr);
     }
 
-    void handleMenuClick(const int32_t itemId) override {
-        SDL_Event event = Events::CreateSweepMinerEvent(Events::MENU_CLICK, itemId);
-        SDL_PushEvent(&event);
-    }
-
 private:
     HWND windowHandle;
     HMENU menuHandle;
@@ -121,6 +140,8 @@ private:
     }
 };
 
-std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window) {
-    return std::make_unique<MenuBar>(window);
+std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window, const uint32_t menuEventId) {
+    return std::make_unique<MenuBar>(window, menuEventId);
 }
+
+#endif

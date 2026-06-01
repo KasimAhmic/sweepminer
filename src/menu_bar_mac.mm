@@ -1,13 +1,14 @@
-#import <Cocoa/Cocoa.h>
+#if SWEEPMINER_PLATFORM_MACOS
 
 #include <unordered_map>
+
+#import <Cocoa/Cocoa.h>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
 
 #include "menu_bar.hpp"
-#include "events.hpp"
 
 @interface MenuHandler : NSObject
 @property(nonatomic, assign) void* cppInstance;
@@ -16,7 +17,7 @@
 
 class MenuBar : public IMenuBar {
 public:
-    MenuBar(SDL_Window* window): IMenuBar(window) {
+    MenuBar(SDL_Window* window, const uint32_t menuEventId): IMenuBar(window, menuEventId) {
         SDL_PropertiesID props = SDL_GetWindowProperties(window);
 
         this->nsWindow = (__bridge NSWindow*)SDL_GetPointerProperty(props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
@@ -88,9 +89,8 @@ public:
         [it->second addItem:[NSMenuItem separatorItem]];
     }
 
-    void handleMenuClick(int32_t itemId) override {
-        SDL_Event event = Events::CreateSweepMinerEvent(Events::MENU_CLICK, itemId);
-        SDL_PushEvent(&event);
+    void dispatchMenuClick(const int32_t itemId) const {
+        this->handleMenuClick(itemId);
     }
 
 private:
@@ -101,8 +101,8 @@ private:
     std::unordered_map<int32_t, NSMenuItem*> menuItemIds;
 };
 
-std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window) {
-    return std::make_unique<MenuBar>(window);
+std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window, const uint32_t menuEventId) {
+    return std::make_unique<MenuBar>(window, menuEventId);
 }
 
 @implementation MenuHandler
@@ -111,9 +111,11 @@ std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window) {
     auto item = static_cast<NSMenuItem*>(sender);
     NSInteger tag = [item tag];
 
-    auto bar = static_cast<MenuBar*>(self.cppInstance);
+    auto menuBar = static_cast<MenuBar*>(self.cppInstance);
 
-    bar->handleMenuClick(static_cast<int32_t>(tag));
+    menuBar->dispatchMenuClick(static_cast<int32_t>(tag));
 }
 
 @end
+
+#endif

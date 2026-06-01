@@ -2,52 +2,35 @@
 
 #include <memory>
 
-enum Menu {
-    ID_APP_MENU = 100,
-    ID_APP_ABOUT,
-    ID_APP_QUIT,
-
-    ID_GAME_MENU,
-    ID_GAME_NEW,
-    ID_GAME_BEGINNER,
-    ID_GAME_INTERMEDIATE,
-    ID_GAME_EXPERT,
-    ID_GAME_CUSTOM,
-    ID_GAME_MARKS,
-    ID_GAME_COLOR,
-    ID_GAME_SOUND,
-    ID_GAME_HIGHSCORES,
-    ID_GAME_EXIT,
-
-    ID_VIEW_MENU,
-    ID_VIEW_ZOOM_MENU,
-    ID_VIEW_ZOOM_IN,
-    ID_VIEW_ZOOM_OUT,
-    ID_VIEW_ZOOM_RESET,
-
-    ID_HELP_MENU,
-    ID_HELP_GITHUB,
-    ID_HELP_REPORT_ISSUE,
-    ID_HELP_ABOUT
-};
+#include <SDL3/SDL.h>
 
 class IMenuBar {
 public:
-    explicit IMenuBar(SDL_Window* window): window(window) {}
+    explicit IMenuBar(SDL_Window* window, const uint32_t menuEventId): window(window), menuEventId(menuEventId) {}
     virtual ~IMenuBar() = default;
 
     virtual void addMenu(int32_t id, const char* title) = 0;
     virtual void addItem(int32_t id, int32_t parentMenuId, const char* title) = 0;
     virtual void addSubMenu(int32_t id, int32_t parentMenuId, const char* title) = 0;
     virtual void addSeparator(int32_t parentMenuId) = 0;
-    virtual void handleMenuClick(int32_t itemId) = 0;
+
     virtual void render() {}
+    [[nodiscard]] virtual bool processMenuEvent(SDL_Event* event) { return false; }
 
     [[nodiscard]] float getHeight() const { return this->height; }
 
 protected:
     SDL_Window* window{};
+    const uint32_t menuEventId{};
     float height{};
+
+    void handleMenuClick(const int32_t itemId) const {
+        SDL_Event event{};
+        event.type = this->menuEventId;
+        event.user.type = this->menuEventId;
+        event.user.code = itemId;
+        SDL_PushEvent(&event);
+    }
 };
 
-std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window);
+std::unique_ptr<IMenuBar> CreateMenuBar(SDL_Window* window, uint32_t menuEventId);

@@ -6,10 +6,6 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
-#ifdef SWEEPMINER_PLATFORM_OTHER
-#include <imgui_impl_sdl3.h>
-#endif
-
 #include "color.hpp"
 #include "events.hpp"
 #include "game.hpp"
@@ -27,21 +23,34 @@ struct AppState {
     std::unique_ptr<Profiler> profiler{};
 };
 
-#ifdef SWEEPMINER_PLATFORM_WINDOWS
-#include <Windows.h>
+enum Menu {
+    ID_APP_MENU = 100,
+    ID_APP_ABOUT,
+    ID_APP_QUIT,
 
-bool HandleWindowsMessage(void* userdata, MSG* msg) {
-    const auto app = static_cast<AppState*>(userdata);
+    ID_GAME_MENU,
+    ID_GAME_NEW,
+    ID_GAME_BEGINNER,
+    ID_GAME_INTERMEDIATE,
+    ID_GAME_EXPERT,
+    ID_GAME_CUSTOM,
+    ID_GAME_MARKS,
+    ID_GAME_COLOR,
+    ID_GAME_SOUND,
+    ID_GAME_HIGHSCORES,
+    ID_GAME_EXIT,
 
-    if (msg->message != WM_COMMAND) {
-        return true;
-    }
+    ID_VIEW_MENU,
+    ID_VIEW_ZOOM_MENU,
+    ID_VIEW_ZOOM_IN,
+    ID_VIEW_ZOOM_OUT,
+    ID_VIEW_ZOOM_RESET,
 
-    app->menuBar->handleMenuClick(LOWORD(msg->wParam));
-
-    return false;
-}
-#endif
+    ID_HELP_MENU,
+    ID_HELP_GITHUB,
+    ID_HELP_REPORT_ISSUE,
+    ID_HELP_ABOUT,
+};
 
 void SDL_QuitAll() {
     MIX_Quit();
@@ -130,7 +139,9 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     SDL_SetRenderVSync(renderer, 1);
     SDL_ShowWindow(window);
 
-    std::unique_ptr<IMenuBar> menuBar = CreateMenuBar(window);
+    Events::init();
+
+    std::unique_ptr<IMenuBar> menuBar = CreateMenuBar(window, Events::MENU_CLICK);
 
 #ifdef SWEEPMINER_PLATFORM_MACOS
     menuBar->addMenu(ID_APP_MENU, "SweepMiner");
@@ -162,10 +173,11 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
     menuBar->addItem(ID_VIEW_ZOOM_RESET, ID_VIEW_ZOOM_MENU, "Reset Zoom");
 
     menuBar->addMenu(ID_HELP_MENU, "Help");
+#ifndef SWEEPMINER_PLATFORM_MACOS
+    menuBar->addItem(ID_HELP_ABOUT, ID_HELP_MENU, "About");
+#endif
     menuBar->addItem(ID_HELP_GITHUB, ID_HELP_MENU, "GitHub");
     menuBar->addItem(ID_HELP_REPORT_ISSUE, ID_HELP_MENU, "Report an Issue");
-
-    Events::init();
 
     try {
         auto game = std::make_unique<Game>(window, renderer, textEngine, mixer, track, menuBar->getHeight());
@@ -187,10 +199,6 @@ SDL_AppResult SDL_AppInit(void** appstate, const int argc, char* argv[]) {
             .profiler = nullptr,
 #endif
         };
-
-#ifdef SWEEPMINER_PLATFORM_WINDOWS
-        SDL_SetWindowsMessageHook(HandleWindowsMessage, *appstate);
-#endif
     } catch (const std::exception& e) {
         MIX_Quit();
         TTF_Quit();
@@ -211,11 +219,9 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
         return SDL_APP_SUCCESS;
     }
 
-#ifdef SWEEPMINER_PLATFORM_OTHER
-    if (ImGui::GetIO().WantCaptureMouse && ImGui_ImplSDL3_ProcessEvent(event)) {
+    if (app->menuBar->processMenuEvent(event)) {
         return SDL_APP_CONTINUE;
     }
-#endif
 
     if (event->type == Events::MENU_CLICK) {
         const int32_t code = event->user.code;
