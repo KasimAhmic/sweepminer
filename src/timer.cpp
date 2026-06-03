@@ -1,9 +1,9 @@
 #include "timer.hpp"
 
-Timer::Timer(const std::function<void()> &callback, const uint32_t interval):
-    callback(callback),
-    interval(interval),
-    running(false) {}
+Timer::Timer(const std::function<void()> &callback, const uint32_t interval)
+    : callback(callback),
+      interval(interval),
+      running(false) {}
 
 Timer::~Timer() {
     this->stop();
@@ -20,11 +20,13 @@ void Timer::start() {
         std::unique_lock lock(this->mutex);
 
         while (this->running.load()) {
+            // Technically, we should wait for a second before calling the callback but this is how the
+            // classic Minesweeper game behaves so whatever
+            this->callback();
+
             this->trigger.wait_for(lock, std::chrono::milliseconds(this->interval), [this] {
                 return !this->running.load();
             });
-
-            this->callback();
         }
     });
 }

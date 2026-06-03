@@ -14,6 +14,7 @@ void NewGameButton::render() {
 
     SDL_FRect srcRect;
 
+    // TODO: Kinda silly that I'm tracking game state in two locations. Should really clean this up somehow.
     switch (this->getState()) {
         case State::WORRIED:
             srcRect = TextureOffset::SMILEY_WORRIED;
@@ -56,7 +57,7 @@ void NewGameButton::onMouseOver(const SDL_MouseMotionEvent& event) {
 void NewGameButton::onMouseOut(const SDL_MouseMotionEvent& event) {
     (void)event;
 
-    if (this->getState() != State::DEFEAT) {
+    if (!this->isGameOver()) {
         this->setState(State::DEFAULT);
     }
 
@@ -68,7 +69,7 @@ void NewGameButton::onMouseOut(const SDL_MouseMotionEvent& event) {
 void NewGameButton::onMouseDown(const SDL_MouseButtonEvent& event) {
     (void)event;
 
-    if (this->getState() != State::DEFEAT) {
+    if (!this->isGameOver()) {
         this->setState(State::PRESSED);
     }
 
@@ -80,7 +81,7 @@ void NewGameButton::onMouseDown(const SDL_MouseButtonEvent& event) {
 void NewGameButton::onMouseUp(const SDL_MouseButtonEvent& event) {
     (void)event;
 
-    if (this->getState() != State::DEFEAT) {
+    if (!this->isGameOver()) {
         this->setState(State::DEFAULT);
     }
 

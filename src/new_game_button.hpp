@@ -1,4 +1,5 @@
 #pragma once
+
 #include "box.hpp"
 #include "button.hpp"
 
@@ -24,6 +25,8 @@ public:
 
     [[nodiscard]] State getState() const { return this->state; }
     void setState(const State newState) { this->state = newState; }
+
+    [[nodiscard]] bool isGameOver() const { return this->state == State::DEFEAT || this->state == State::VICTORY; }
 
 protected:
     void onMouseOver(const SDL_MouseMotionEvent& event) override;

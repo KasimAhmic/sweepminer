@@ -44,7 +44,7 @@ void ScoreBoard::handleEvent(const SDL_Event &event) const {
     switch (event.type) {
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
             if (!this->newGameButton->handleMouseEvent(event.button)) {
-                if (this->newGameButton->getState() != NewGameButton::State::DEFEAT) {
+                if (!this->newGameButton->isGameOver()) {
                     this->newGameButton->setState(NewGameButton::State::WORRIED);
                 }
             }
@@ -52,7 +52,7 @@ void ScoreBoard::handleEvent(const SDL_Event &event) const {
         }
         case SDL_EVENT_MOUSE_BUTTON_UP: {
             if (!this->newGameButton->handleMouseEvent(event.button)) {
-                if (this->newGameButton->getState() != NewGameButton::State::DEFEAT) {
+                if (!this->newGameButton->isGameOver()) {
                     this->newGameButton->setState(NewGameButton::State::DEFAULT);
                 }
             }
@@ -80,5 +80,7 @@ void ScoreBoard::handleEvent(const SDL_Event &event) const {
         }
     } else if (event.type == Events::LOSE_GAME) {
         this->newGameButton->setState(NewGameButton::State::DEFEAT);
+    } else if (event.type == Events::WIN_GAME) {
+        this->newGameButton->setState(NewGameButton::State::VICTORY);
     }
 }

@@ -37,9 +37,7 @@ public:
 
     void init();
     void newGame();
-
-    void endGame();
-
+    void endGame(State endState);
     void start();
 
     void handleEvent(const SDL_Event &event);

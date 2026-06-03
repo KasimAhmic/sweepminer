@@ -143,6 +143,7 @@ void CellGrid::handleEvent(const SDL_Event &event) const {
     if (event.user.type == Events::REVEAL_CELL) {
         const auto [row, column] = Events::GetRevealedCell(event);
         this->revealConnectedCells(row, column);
+        this->checkForVictory();
     }
 }
 
@@ -193,6 +194,25 @@ void CellGrid::revealConnectedCells(const uint8_t selectedCellRow, const uint8_t
             queue.emplace(row + deltaRow, column + deltaColumn);
         }
     }
+}
+
+void CellGrid::checkForVictory() const {
+    for (uint8_t row = 0; row < this->rows; row++) {
+        for (uint8_t column = 0; column < this->columns; column++) {
+            const Cell* cell = this->cells[row][column].get();
+
+            if (cell == nullptr) {
+                continue;
+            }
+
+            if (!cell->hasMine() && cell->getState() != Cell::State::REVEALED) {
+                return;
+            }
+        }
+    }
+
+    SDL_Event event = Events::CreateSweepMinerEvent(Events::WIN_GAME, 0);
+    SDL_PushEvent(&event);
 }
 
 void CellGrid::render() {

@@ -98,9 +98,9 @@ void Game::newGame() {
         static_cast<int>(backgroundRect.h + this->menuBarHeight));
 }
 
-void Game::endGame() {
+void Game::endGame(const Game::State endState) {
     this->timer->stop();
-    this->setState(State::DEFEAT);
+    this->setState(endState);
 }
 
 void Game::start() {
@@ -117,14 +117,16 @@ void Game::handleEvent(const SDL_Event &event) {
 
     if (event.type == Events::NEW_GAME) {
         this->newGame();
-    } else if (event.type == Events::LOSE_GAME) {
-        this->endGame();
     } else if (event.type == Events::REVEAL_CELL && this->getState() == State::NEW) {
         this->start();
+    } else if (event.type == Events::LOSE_GAME) {
+        this->endGame(State::DEFEAT);
+    } else if (event.type == Events::WIN_GAME) {
+        this->endGame(State::VICTORY);
     }
 
     ProfileCall("Cell Grid Events", {
-        if (this->getState() != State::DEFEAT) {
+        if (this->getState() != State::DEFEAT && this->getState() != State::VICTORY) {
             this->cellGrid->handleEvent(event);
         }
     });

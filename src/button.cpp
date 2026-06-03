@@ -33,6 +33,8 @@ bool Button::handleMouseEvent(const SDL_MouseMotionEvent& event) {
 }
 
 bool Button::handleMouseEvent(const SDL_MouseButtonEvent& event) {
+    this->isHovered = this->isWithinBounds(event.x, event.y);
+
     if (!this->isHovered) {
         return false;
     }

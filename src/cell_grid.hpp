@@ -24,6 +24,7 @@ public:
 
     void handleEvent(const SDL_Event &event) const;
     void revealConnectedCells(uint8_t selectedCellRow, uint8_t selectedCellColumn) const;
+    void checkForVictory() const;
 
 private:
     uint8_t rows;
