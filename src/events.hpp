@@ -4,8 +4,6 @@
 
 #include <SDL3/SDL.h>
 
-#include "cell.hpp"
-
 namespace Events {
     inline bool initialized = false;
 
